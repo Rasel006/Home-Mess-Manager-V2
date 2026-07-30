@@ -57,51 +57,22 @@
       </div>
       <p id="save-msg" class="status-msg"></p>
     </div>
-
-    <!-- Monthly Overview & Due Status Card -->
-    <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e1;">
-      <h3 style="margin-bottom: 12px;">📊 Monthly Overview & Due Status</h3>
-      
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 15px;">
-        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <small style="color: #64748b; font-size: 0.75rem;">Total Bazar</small>
-          <h4 id="mess-total-bazar" style="margin-top: 2px; color: #1e293b; font-size: 0.95rem;">0 Tk</h4>
-        </div>
-        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <small style="color: #64748b; font-size: 0.75rem;">Total Meals</small>
-          <h4 id="mess-total-meals" style="margin-top: 2px; color: #1e293b; font-size: 0.95rem;">0</h4>
-        </div>
-        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <small style="color: #64748b; font-size: 0.75rem;">Meal Rate</small>
-          <h4 id="current-meal-rate" style="margin-top: 2px; color: #2563eb; font-size: 0.95rem;">0 Tk</h4>
-        </div>
-      </div>
-
-      <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 10px 0;">
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
-        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <small style="color: #64748b; font-size: 0.8rem;">Your Total Meals</small>
-          <h4 id="user-total-meals" style="margin-top: 2px;">0</h4>
-        </div>
-        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <small style="color: #64748b; font-size: 0.8rem;">Your Total Cost</small>
-          <h4 id="user-total-cost" style="margin-top: 2px; color: #d97706;">0 Tk</h4>
-        </div>
-      </div>
-
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
-        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <small style="color: #64748b; font-size: 0.8rem;">Your Deposit</small>
-          <h4 id="user-total-deposit" style="margin-top: 2px; color: #16a34a;">0 Tk</h4>
-        </div>
-        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
-          <small style="color: #64748b; font-size: 0.8rem;">Balance Status</small>
-          <h4 id="user-due-status" style="margin-top: 2px;">0 Tk</h4>
-        </div>
-      </div>
+<!-- Live Board -->
+    <div class="card">
+      <h3>📋 Today's Live Board</h3>
+      <table class="meal-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Lunch</th>
+            <th>Dinner</th>
+          </tr>
+        </thead>
+        <tbody id="board-body">
+          <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+      </table>
     </div>
-
     <!-- Deposit Entry Card -->
     <div class="card">
       <h3>💵 Request Deposit Entry</h3>
@@ -145,21 +116,48 @@
       </ul>
     </div>
 
-    <!-- Live Board -->
-    <div class="card">
-      <h3>📋 Today's Live Board</h3>
-      <table class="meal-table">
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th>Lunch</th>
-            <th>Dinner</th>
-          </tr>
-        </thead>
-        <tbody id="board-body">
-          <tr><td colspan="3">Loading...</td></tr>
-        </tbody>
-      </table>
+<!-- Monthly Overview & Due Status Card -->
+    <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e1;">
+      <h3 style="margin-bottom: 12px;">📊 Monthly Overview & Due Status</h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 15px;">
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.75rem;">Total Bazar</small>
+          <h4 id="mess-total-bazar" style="margin-top: 2px; color: #1e293b; font-size: 0.95rem;">0 Tk</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.75rem;">Total Meals</small>
+          <h4 id="mess-total-meals" style="margin-top: 2px; color: #1e293b; font-size: 0.95rem;">0</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.75rem;">Meal Rate</small>
+          <h4 id="current-meal-rate" style="margin-top: 2px; color: #2563eb; font-size: 0.95rem;">0 Tk</h4>
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 10px 0;">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Your Total Meals</small>
+          <h4 id="user-total-meals" style="margin-top: 2px;">0</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Your Total Cost</small>
+          <h4 id="user-total-cost" style="margin-top: 2px; color: #d97706;">0 Tk</h4>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Your Deposit</small>
+          <h4 id="user-total-deposit" style="margin-top: 2px; color: #16a34a;">0 Tk</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Balance Status</small>
+          <h4 id="user-due-status" style="margin-top: 2px;">0 Tk</h4>
+        </div>
+      </div>
     </div>
 
     <!-- Change PIN -->
