@@ -166,7 +166,7 @@ if (welcomeName) {
           saveBtn.style.display = "block";
           saveBtn.style.flex = "1";
           saveBtn.disabled = true;
-          saveBtn.style.backgroundColor = "#16a34a"; // Green saved color
+          saveBtn.style.backgroundColor = "#16a34a";
           saveBtn.textContent = "✓ Meal Saved";
         }
         if (editBtn) editBtn.style.display = "inline-block";
@@ -175,7 +175,7 @@ if (welcomeName) {
           saveBtn.style.display = "block";
           saveBtn.style.flex = "1";
           saveBtn.disabled = false;
-          saveBtn.style.backgroundColor = "#2563eb"; // Blue color
+          saveBtn.style.backgroundColor = "#2563eb";
           saveBtn.textContent = isSubmitted ? "Update Meal" : "Save Meal";
         }
         if (editBtn) editBtn.style.display = "none";
@@ -385,7 +385,6 @@ if (bazarForm) {
     if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
   });
 
-  // Default month setup
   const now = new Date();
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
   if (monthSelect) monthSelect.value = currentMonthStr;
@@ -493,6 +492,20 @@ if (bazarForm) {
 // ------------------------------------
 const historyDateInput = document.getElementById("history-date");
 if (historyDateInput) {
+  const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+  const backBtn = document.getElementById("back-btn");
+
+  // Dynamic Back Button based on user role
+  if (backBtn && currentUser) {
+    if (currentUser.role === "admin") {
+      backBtn.textContent = "← Back to Admin";
+      backBtn.href = "admin.html";
+    } else {
+      backBtn.textContent = "← Back to Dashboard";
+      backBtn.href = "member.html";
+    }
+  }
+
   const todayStr = getTodayDateStr();
   historyDateInput.value = todayStr;
 
@@ -507,8 +520,13 @@ if (historyDateInput) {
 
       MEMBERS_LIST.forEach(m => {
         const meal = data[m] || { lunch: 0, dinner: 0 };
-        const sum = meal.lunch + meal.dinner;
-        html += `<tr><td>${m} ${m === 'Rizu' ? '(Admin)' : ''}</td><td>${meal.lunch}</td><td>${meal.dinner}</td><td><strong>${sum}</strong></td></tr>`;
+        const sum = (meal.lunch || 0) + (meal.dinner || 0);
+        html += `<tr>
+          <td>${m} ${m === 'Rizu' ? '(Admin)' : ''}</td>
+          <td>${meal.lunch || 0}</td>
+          <td>${meal.dinner || 0}</td>
+          <td><strong>${sum}</strong></td>
+        </tr>`;
       });
       if (body) body.innerHTML = html;
     });
