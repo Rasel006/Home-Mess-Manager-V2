@@ -1,80 +1,34 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Member Dashboard - Home Mess Manager V2</title>
-  <link rel="stylesheet" href="style.css">
-</head>
-<body>
-  <div class="dashboard-container">
-    
-    <header class="top-header">
-      <h2 id="welcome-name">Hi, Member! 👋</h2>
-      <a href="history.html" class="nav-link">📜 History</a>
-      <button id="logout-btn" class="btn-logout">Logout</button>
-    </header>
+<!-- Member Meal Entry Card -->
+<div class="card">
+  <h3>🍽️ Your Today's Meal (<span id="current-date">--</span>)</h3>
+  <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">
+    ⏰ Cutoffs: Lunch before 12:00 PM | Dinner before 8:00 PM
+  </p>
 
-    <!-- Member Meal Entry -->
-    <div class="card">
-      <h3>🍽️ Your Today's Meal (<span id="current-date">--</span>)</h3>
-      <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">
-        ⏰ Cutoffs: Lunch before 12:00 PM | Dinner before 8:00 PM
-      </p>
-
-      <div class="meal-input-group">
-        <div class="meal-row">
-          <span>Lunch Meal:</span>
-          <div class="counter-control">
-            <button type="button" class="btn-counter" id="lunch-minus">-</button>
-            <span id="lunch-val" class="counter-val">0</span>
-            <button type="button" class="btn-counter" id="lunch-plus">+</button>
-          </div>
-        </div>
-
-        <div class="meal-row">
-          <span>Dinner Meal:</span>
-          <div class="counter-control">
-            <button type="button" class="btn-counter" id="dinner-minus">-</button>
-            <span id="dinner-val" class="counter-val">0</span>
-            <button type="button" class="btn-counter" id="dinner-plus">+</button>
-          </div>
-        </div>
+  <div class="meal-input-group">
+    <div class="meal-row">
+      <span>Lunch Meal:</span>
+      <div class="counter-control">
+        <button type="button" class="btn-counter" id="lunch-minus">-</button>
+        <span id="lunch-val" class="counter-val">0</span>
+        <button type="button" class="btn-counter" id="lunch-plus">+</button>
       </div>
-
-      <button id="save-meal-btn" class="btn btn-primary">Save Meal</button>
-      <p id="save-msg" class="status-msg"></p>
     </div>
 
-    <!-- Live Board for Members -->
-    <div class="card">
-      <h3>📋 Today's Live Board</h3>
-      <table class="meal-table">
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th>Lunch</th>
-            <th>Dinner</th>
-          </tr>
-        </thead>
-        <tbody id="board-body">
-          <tr><td colspan="3">Loading...</td></tr>
-        </tbody>
-      </table>
-    </div>
-
-    <!-- Change PIN -->
-    <div class="card">
-      <h3>🔑 Change Your PIN</h3>
-      <div class="form-group">
-        <input type="password" id="new-pin-input" placeholder="New PIN (min 4 digits)">
+    <div class="meal-row">
+      <span>Dinner Meal:</span>
+      <div class="counter-control">
+        <button type="button" class="btn-counter" id="dinner-minus">-</button>
+        <span id="dinner-val" class="counter-val">0</span>
+        <button type="button" class="btn-counter" id="dinner-plus">+</button>
       </div>
-      <button id="update-pin-btn" class="btn btn-secondary">Update PIN</button>
-      <p id="pin-msg" class="status-msg"></p>
     </div>
-
   </div>
 
-  <script type="module" src="app.js"></script>
-</body>
-</html>
+  <!-- Save & Edit Button Section -->
+  <div style="display: flex; gap: 10px; margin-top: 15px;">
+    <button id="save-meal-btn" class="btn btn-primary" style="flex: 1;">Save Meal</button>
+    <button id="edit-meal-btn" class="btn btn-secondary" style="display: none; width: auto; padding: 0 16px;">✏️ Edit</button>
+  </div>
+  <p id="save-msg" class="status-msg"></p>
+</div>
