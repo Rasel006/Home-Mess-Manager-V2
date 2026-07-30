@@ -1,15 +1,12 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, get, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
-// YOUR FIREBASE CONFIGURATION (Updated with Singapore Region URL)
+// FIREBASE CONFIGURATION
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
   authDomain: "home-mess-manager-c4ad7.firebaseapp.com",
   databaseURL: "https://home-mess-manager-c4ad7-default-rtdb.asia-southeast1.firebasedatabase.app",
   projectId: "home-mess-manager-c4ad7",
-  storageBucket: "home-mess-manager-c4ad7.appspot.com",
-  messagingSenderId: "YOUR_SENDER_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "home-mess-manager-c4ad7.appspot.com"
 };
 
 const app = initializeApp(firebaseConfig);
@@ -90,7 +87,7 @@ if (welcomeName) {
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
 
-  // PIN Update
+  // PIN Update Logic
   const updatePinBtn = document.getElementById("update-pin-btn");
   if (updatePinBtn) {
     updatePinBtn.onclick = () => {
@@ -119,7 +116,6 @@ if (welcomeName) {
 
   let lunchCount = 0;
   let dinnerCount = 0;
-  let isLocked = false;
 
   const lunchVal = document.getElementById("lunch-val");
   const dinnerVal = document.getElementById("dinner-val");
@@ -131,49 +127,97 @@ if (welcomeName) {
   const dinnerPlus = document.getElementById("dinner-plus");
   const dinnerMinus = document.getElementById("dinner-minus");
 
-  lunchPlus.onclick = () => { if (!isLocked) { lunchCount++; lunchVal.textContent = lunchCount; } };
-  lunchMinus.onclick = () => { if (!isLocked && lunchCount > 0) { lunchCount--; lunchVal.textContent = lunchCount; } };
-  dinnerPlus.onclick = () => { if (!isLocked) { dinnerCount++; dinnerVal.textContent = dinnerCount; } };
-  dinnerMinus.onclick = () => { if (!isLocked && dinnerCount > 0) { dinnerCount--; dinnerVal.textContent = dinnerCount; } };
+  // Helper function to check member time cutoffs
+  function isLunchCutoffPassed() {
+    return new Date().getHours() >= 12; // 12:00 PM cutoff
+  }
 
-  saveBtn.onclick = () => {
-    if (isLocked) return;
+  function isDinnerCutoffPassed() {
+    return new Date().getHours() >= 20; // 08:00 PM (20:00) cutoff
+  }
 
-    set(ref(db, `meals/${todayStr}/${currentUser.name}`), {
-      lunch: lunchCount,
-      dinner: dinnerCount,
-      submitted: true
-    })
-      .then(() => {
-        saveMsg.style.color = "#16a34a";
-        saveMsg.textContent = "Saved successfully! Input locked.";
-      })
-      .catch(err => {
+  function updateButtonStates() {
+    const lunchLocked = isLunchCutoffPassed();
+    const dinnerLocked = isDinnerCutoffPassed();
+
+    if (lunchPlus) lunchPlus.disabled = lunchLocked;
+    if (lunchMinus) lunchMinus.disabled = lunchLocked;
+    if (dinnerPlus) dinnerPlus.disabled = dinnerLocked;
+    if (dinnerMinus) dinnerMinus.disabled = dinnerLocked;
+
+    if (lunchLocked && dinnerLocked) {
+      if (saveBtn) {
+        saveBtn.disabled = true;
+        saveBtn.style.backgroundColor = "#94a3b8";
+        saveBtn.style.cursor = "not-allowed";
+        saveBtn.textContent = "🔒 Meals Locked For Today";
+      }
+      if (saveMsg) {
         saveMsg.style.color = "#ef4444";
-        saveMsg.textContent = err.message;
-      });
-  };
+        saveMsg.textContent = "Cutoff passed (Lunch: 12 PM, Dinner: 8 PM). Contact Admin (Rizu) for changes.";
+      }
+    } else {
+      if (saveBtn) {
+        saveBtn.disabled = false;
+        saveBtn.style.backgroundColor = "#2563eb";
+        saveBtn.style.cursor = "pointer";
+        saveBtn.textContent = "Save Meal";
+      }
+      let msg = "";
+      if (lunchLocked) msg += "Lunch locked (past 12 PM). ";
+      if (dinnerLocked) msg += "Dinner locked (past 8 PM). ";
+      if (saveMsg) {
+        saveMsg.style.color = "#d97706";
+        saveMsg.textContent = msg;
+      }
+    }
+  }
 
-  // Real-time updates & Lock verification
+  if (lunchPlus) lunchPlus.onclick = () => { if (!isLunchCutoffPassed()) { lunchCount++; lunchVal.textContent = lunchCount; } };
+  if (lunchMinus) lunchMinus.onclick = () => { if (!isLunchCutoffPassed() && lunchCount > 0) { lunchCount--; lunchVal.textContent = lunchCount; } };
+  if (dinnerPlus) dinnerPlus.onclick = () => { if (!isDinnerCutoffPassed()) { dinnerCount++; dinnerVal.textContent = dinnerCount; } };
+  if (dinnerMinus) dinnerMinus.onclick = () => { if (!isDinnerCutoffPassed() && dinnerCount > 0) { dinnerCount--; dinnerVal.textContent = dinnerCount; } };
+
+  if (saveBtn) {
+    saveBtn.onclick = () => {
+      updateButtonStates();
+      if (isLunchCutoffPassed() && isDinnerCutoffPassed()) return;
+
+      set(ref(db, `meals/${todayStr}/${currentUser.name}`), {
+        lunch: lunchCount,
+        dinner: dinnerCount,
+        submitted: true
+      })
+        .then(() => {
+          if (saveMsg) {
+            saveMsg.style.color = "#16a34a";
+            saveMsg.textContent = "Saved successfully!";
+            setTimeout(() => updateButtonStates(), 2000);
+          }
+        })
+        .catch(err => {
+          if (saveMsg) {
+            saveMsg.style.color = "#ef4444";
+            saveMsg.textContent = err.message;
+          }
+        });
+    };
+  }
+
+  // Real-time listener for member dashboard
   onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
     const data = snapshot.val() || {};
     const boardBody = document.getElementById("board-body");
     let totalLunch = 0, totalDinner = 0, rowsHtml = "";
 
-    if (data[currentUser.name] && data[currentUser.name].submitted) {
-      isLocked = true;
-      lunchCount = data[currentUser.name].lunch;
-      dinnerCount = data[currentUser.name].dinner;
-      lunchVal.textContent = lunchCount;
-      dinnerVal.textContent = dinnerCount;
-
-      saveBtn.disabled = true;
-      saveBtn.style.backgroundColor = "#94a3b8";
-      saveBtn.style.cursor = "not-allowed";
-      saveBtn.textContent = "🔒 Meal Locked For Today";
-      saveMsg.style.color = "#ef4444";
-      saveMsg.textContent = "Locked. Contact Admin (Rizu) to make edits.";
+    if (data[currentUser.name]) {
+      lunchCount = data[currentUser.name].lunch || 0;
+      dinnerCount = data[currentUser.name].dinner || 0;
+      if (lunchVal) lunchVal.textContent = lunchCount;
+      if (dinnerVal) dinnerVal.textContent = dinnerCount;
     }
+
+    updateButtonStates();
 
     MEMBERS_LIST.forEach((name) => {
       const meal = data[name] || { lunch: 0, dinner: 0 };
@@ -188,15 +232,15 @@ if (welcomeName) {
     });
 
     if (boardBody) boardBody.innerHTML = rowsHtml;
-    document.getElementById("total-lunch").textContent = totalLunch;
-    document.getElementById("total-dinner").textContent = totalDinner;
-    document.getElementById("total-day").textContent = totalLunch + totalDinner;
   });
 
-  document.getElementById("logout-btn").onclick = () => {
-    sessionStorage.removeItem("currentUser");
-    window.location.href = "index.html";
-  };
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.onclick = () => {
+      sessionStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    };
+  }
 }
 
 // ------------------------------------
@@ -217,28 +261,40 @@ if (bazarForm) {
   const dinnerVal = document.getElementById("dinner-val");
 
   if (lunchVal && dinnerVal) {
-    document.getElementById("lunch-plus").onclick = () => { adminLunchCount++; lunchVal.textContent = adminLunchCount; };
-    document.getElementById("lunch-minus").onclick = () => { if (adminLunchCount > 0) adminLunchCount--; lunchVal.textContent = adminLunchCount; };
-    document.getElementById("dinner-plus").onclick = () => { adminDinnerCount++; dinnerVal.textContent = adminDinnerCount; };
-    document.getElementById("dinner-minus").onclick = () => { if (adminDinnerCount > 0) adminDinnerCount--; dinnerVal.textContent = adminDinnerCount; };
+    const lunchPlus = document.getElementById("lunch-plus");
+    const lunchMinus = document.getElementById("lunch-minus");
+    const dinnerPlus = document.getElementById("dinner-plus");
+    const dinnerMinus = document.getElementById("dinner-minus");
+    const saveMealBtn = document.getElementById("save-meal-btn");
 
-    document.getElementById("save-meal-btn").onclick = () => {
-      const saveMsg = document.getElementById("save-msg");
-      set(ref(db, `meals/${todayStr}/Rizu`), { lunch: adminLunchCount, dinner: adminDinnerCount, submitted: true })
-        .then(() => {
-          saveMsg.style.color = "#16a34a";
-          saveMsg.textContent = "Admin meal saved successfully!";
-          setTimeout(() => saveMsg.textContent = "", 2500);
-          loadMonthlyData(monthSelect.value);
-        })
-        .catch(err => {
-          saveMsg.style.color = "#ef4444";
-          saveMsg.textContent = err.message;
-        });
-    };
+    if (lunchPlus) lunchPlus.onclick = () => { adminLunchCount++; lunchVal.textContent = adminLunchCount; };
+    if (lunchMinus) lunchMinus.onclick = () => { if (adminLunchCount > 0) adminLunchCount--; lunchVal.textContent = adminLunchCount; };
+    if (dinnerPlus) dinnerPlus.onclick = () => { adminDinnerCount++; dinnerVal.textContent = adminDinnerCount; };
+    if (dinnerMinus) dinnerMinus.onclick = () => { if (adminDinnerCount > 0) adminDinnerCount--; dinnerVal.textContent = adminDinnerCount; };
+
+    if (saveMealBtn) {
+      saveMealBtn.onclick = () => {
+        const saveMsg = document.getElementById("save-msg");
+        set(ref(db, `meals/${todayStr}/Rizu`), { lunch: adminLunchCount, dinner: adminDinnerCount, submitted: true })
+          .then(() => {
+            if (saveMsg) {
+              saveMsg.style.color = "#16a34a";
+              saveMsg.textContent = "Admin meal saved successfully!";
+              setTimeout(() => saveMsg.textContent = "", 2500);
+            }
+            loadMonthlyData(monthSelect.value);
+          })
+          .catch(err => {
+            if (saveMsg) {
+              saveMsg.style.color = "#ef4444";
+              saveMsg.textContent = err.message;
+            }
+          });
+      };
+    }
   }
 
-  // Global update function accessible by inline buttons for Admin
+  // Admin Direct Real-Time Edit Function (No time limit for Admin)
   window.updateMemberMeal = (memberName, mealType, change) => {
     const memberRef = ref(db, `meals/${todayStr}/${memberName}`);
     get(memberRef).then((snapshot) => {
@@ -254,7 +310,7 @@ if (bazarForm) {
     });
   };
 
-  // Real-Time Board for Admin with Direct Controls
+  // Real-Time Board for Admin with Live Controls
   onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
     const data = snapshot.val() || {};
     const boardBody = document.getElementById("board-body");
@@ -268,8 +324,8 @@ if (bazarForm) {
       if (name === "Rizu" && snapshot.exists() && data["Rizu"]) {
         adminLunchCount = meal.lunch;
         adminDinnerCount = meal.dinner;
-        lunchVal.textContent = adminLunchCount;
-        dinnerVal.textContent = adminDinnerCount;
+        if (lunchVal) lunchVal.textContent = adminLunchCount;
+        if (dinnerVal) dinnerVal.textContent = adminDinnerCount;
       }
 
       rowsHtml += `<tr ${name === 'Rizu' ? 'class="highlight-user"' : ''}>
@@ -303,12 +359,8 @@ if (bazarForm) {
   // Default month setup
   const now = new Date();
   const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  if (monthSelect) {
-    monthSelect.value = currentMonthStr;
-  }
-  if (bazarDate) {
-    bazarDate.value = todayStr;
-  }
+  if (monthSelect) monthSelect.value = currentMonthStr;
+  if (bazarDate) bazarDate.value = todayStr;
 
   bazarForm.addEventListener("submit", (e) => {
     e.preventDefault();
@@ -335,7 +387,6 @@ if (bazarForm) {
       return;
     }
 
-    // Split target "YYYY-MM" into numbers
     const [targetYear, targetMonth] = selectedYearMonth.split("-").map(Number);
 
     let totalMeals = 0;
@@ -343,7 +394,6 @@ if (bazarForm) {
     const memberMealCounts = {};
     MEMBERS_LIST.forEach(m => memberMealCounts[m] = 0);
 
-    // 1. Fetch & calculate Meals for target month
     const mealsSnap = await get(ref(db, "meals"));
     if (mealsSnap.exists()) {
       const allMeals = mealsSnap.val();
@@ -353,16 +403,13 @@ if (bazarForm) {
           Object.keys(allMeals[dateStr]).forEach(mem => {
             const mData = allMeals[dateStr][mem];
             const sum = (mData.lunch || 0) + (mData.dinner || 0);
-            if (memberMealCounts[mem] !== undefined) {
-              memberMealCounts[mem] += sum;
-            }
+            if (memberMealCounts[mem] !== undefined) memberMealCounts[mem] += sum;
             totalMeals += sum;
           });
         }
       });
     }
 
-    // 2. Fetch & calculate Bazar for target month
     const bazarSnap = await get(ref(db, "bazar"));
     if (bazarSnap.exists()) {
       const allBazar = bazarSnap.val();
@@ -378,9 +425,13 @@ if (bazarForm) {
 
     const mealRate = totalMeals > 0 ? (totalBazar / totalMeals) : 0;
 
-    document.getElementById("monthly-total-meals").textContent = totalMeals;
-    document.getElementById("monthly-total-bazar").textContent = `${totalBazar} Tk`;
-    document.getElementById("calculated-meal-rate").textContent = `${mealRate.toFixed(2)} Tk`;
+    const totMealsEl = document.getElementById("monthly-total-meals");
+    const totBazarEl = document.getElementById("monthly-total-bazar");
+    const mealRateEl = document.getElementById("calculated-meal-rate");
+
+    if (totMealsEl) totMealsEl.textContent = totalMeals;
+    if (totBazarEl) totBazarEl.textContent = `${totalBazar} Tk`;
+    if (mealRateEl) mealRateEl.textContent = `${mealRate.toFixed(2)} Tk`;
 
     const board = document.getElementById("settlement-board-body");
     if (board) {
@@ -394,13 +445,18 @@ if (bazarForm) {
     }
   }
 
-  monthSelect.addEventListener("change", (e) => loadMonthlyData(e.target.value));
+  if (monthSelect) {
+    monthSelect.addEventListener("change", (e) => loadMonthlyData(e.target.value));
+  }
   loadMonthlyData(currentMonthStr);
 
-  document.getElementById("logout-btn").onclick = () => {
-    sessionStorage.removeItem("currentUser");
-    window.location.href = "index.html";
-  };
+  const logoutBtn = document.getElementById("logout-btn");
+  if (logoutBtn) {
+    logoutBtn.onclick = () => {
+      sessionStorage.removeItem("currentUser");
+      window.location.href = "index.html";
+    };
+  }
 }
 
 // ------------------------------------
@@ -412,7 +468,9 @@ if (historyDateInput) {
   historyDateInput.value = todayStr;
 
   function fetchHistory(dateStr) {
-    document.getElementById("selected-history-date").textContent = dateStr;
+    const selDateEl = document.getElementById("selected-history-date");
+    if (selDateEl) selDateEl.textContent = dateStr;
+
     get(ref(db, `meals/${dateStr}`)).then(snapshot => {
       const data = snapshot.val() || {};
       const body = document.getElementById("history-board-body");
@@ -423,7 +481,7 @@ if (historyDateInput) {
         const sum = meal.lunch + meal.dinner;
         html += `<tr><td>${m} ${m === 'Rizu' ? '(Admin)' : ''}</td><td>${meal.lunch}</td><td>${meal.dinner}</td><td><strong>${sum}</strong></td></tr>`;
       });
-      body.innerHTML = html;
+      if (body) body.innerHTML = html;
     });
   }
 
