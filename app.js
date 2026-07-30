@@ -116,11 +116,13 @@ if (welcomeName) {
 
   let lunchCount = 0;
   let dinnerCount = 0;
-  let hasSubmittedBefore = false;
+  let isEditingMode = true; 
+  let isSubmitted = false;
 
   const lunchVal = document.getElementById("lunch-val");
   const dinnerVal = document.getElementById("dinner-val");
   const saveBtn = document.getElementById("save-meal-btn");
+  const editBtn = document.getElementById("edit-meal-btn");
   const saveMsg = document.getElementById("save-msg");
 
   const lunchPlus = document.getElementById("lunch-plus");
@@ -128,48 +130,57 @@ if (welcomeName) {
   const dinnerPlus = document.getElementById("dinner-plus");
   const dinnerMinus = document.getElementById("dinner-minus");
 
-  // Time cutoff functions
   function isLunchCutoffPassed() {
-    return new Date().getHours() >= 12; // 12:00 PM cutoff
+    return new Date().getHours() >= 12; // 12:00 PM Cutoff
   }
 
   function isDinnerCutoffPassed() {
-    return new Date().getHours() >= 20; // 08:00 PM (20:00) cutoff
+    return new Date().getHours() >= 20; // 08:00 PM Cutoff
   }
 
-  function updateButtonStates() {
+  function updateUIState() {
     const lunchLocked = isLunchCutoffPassed();
     const dinnerLocked = isDinnerCutoffPassed();
 
-    if (lunchPlus) lunchPlus.disabled = lunchLocked;
-    if (lunchMinus) lunchMinus.disabled = lunchLocked;
-    if (dinnerPlus) dinnerPlus.disabled = dinnerLocked;
-    if (dinnerMinus) dinnerMinus.disabled = dinnerLocked;
+    if (lunchPlus) lunchPlus.disabled = lunchLocked || !isEditingMode;
+    if (lunchMinus) lunchMinus.disabled = lunchLocked || !isEditingMode;
+    if (dinnerPlus) dinnerPlus.disabled = dinnerLocked || !isEditingMode;
+    if (dinnerMinus) dinnerMinus.disabled = dinnerLocked || !isEditingMode;
 
     if (lunchLocked && dinnerLocked) {
       if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.style.backgroundColor = "#94a3b8";
-        saveBtn.style.cursor = "not-allowed";
+        saveBtn.style.display = "block";
+        saveBtn.style.width = "100%";
         saveBtn.textContent = "🔒 Meals Locked For Today";
       }
+      if (editBtn) editBtn.style.display = "none";
       if (saveMsg) {
         saveMsg.style.color = "#ef4444";
         saveMsg.textContent = "Cutoff passed (Lunch: 12 PM, Dinner: 8 PM). Contact Admin (Rizu) for changes.";
       }
     } else {
-      if (saveBtn) {
-        saveBtn.disabled = false;
-        saveBtn.style.backgroundColor = "#2563eb";
-        saveBtn.style.cursor = "pointer";
-        
-        // Show 'Edit Meal' if submitted before or counts exist
-        if (hasSubmittedBefore || lunchCount > 0 || dinnerCount > 0) {
-          saveBtn.textContent = "✏️ Edit Meal";
-        } else {
-          saveBtn.textContent = "Save Meal";
+      if (isSubmitted && !isEditingMode) {
+        if (saveBtn) {
+          saveBtn.style.display = "block";
+          saveBtn.style.flex = "1";
+          saveBtn.disabled = true;
+          saveBtn.style.backgroundColor = "#16a34a"; // Green saved color
+          saveBtn.textContent = "✓ Meal Saved";
         }
+        if (editBtn) editBtn.style.display = "inline-block";
+      } else {
+        if (saveBtn) {
+          saveBtn.style.display = "block";
+          saveBtn.style.flex = "1";
+          saveBtn.disabled = false;
+          saveBtn.style.backgroundColor = "#2563eb"; // Blue color
+          saveBtn.textContent = isSubmitted ? "Update Meal" : "Save Meal";
+        }
+        if (editBtn) editBtn.style.display = "none";
       }
+
       let msg = "";
       if (lunchLocked) msg += "Lunch locked (past 12 PM). ";
       if (dinnerLocked) msg += "Dinner locked (past 8 PM). ";
@@ -180,38 +191,20 @@ if (welcomeName) {
     }
   }
 
-  if (lunchPlus) lunchPlus.onclick = () => { 
-    if (!isLunchCutoffPassed()) { 
-      lunchCount++; 
-      if (lunchVal) lunchVal.textContent = lunchCount; 
-      updateButtonStates();
-    } 
-  };
-  if (lunchMinus) lunchMinus.onclick = () => { 
-    if (!isLunchCutoffPassed() && lunchCount > 0) { 
-      lunchCount--; 
-      if (lunchVal) lunchVal.textContent = lunchCount; 
-      updateButtonStates();
-    } 
-  };
-  if (dinnerPlus) dinnerPlus.onclick = () => { 
-    if (!isDinnerCutoffPassed()) { 
-      dinnerCount++; 
-      if (dinnerVal) dinnerVal.textContent = dinnerCount; 
-      updateButtonStates();
-    } 
-  };
-  if (dinnerMinus) dinnerMinus.onclick = () => { 
-    if (!isDinnerCutoffPassed() && dinnerCount > 0) { 
-      dinnerCount--; 
-      if (dinnerVal) dinnerVal.textContent = dinnerCount; 
-      updateButtonStates();
-    } 
-  };
+  if (lunchPlus) lunchPlus.onclick = () => { if (!isLunchCutoffPassed() && isEditingMode) { lunchCount++; if (lunchVal) lunchVal.textContent = lunchCount; } };
+  if (lunchMinus) lunchMinus.onclick = () => { if (!isLunchCutoffPassed() && isEditingMode && lunchCount > 0) { lunchCount--; if (lunchVal) lunchVal.textContent = lunchCount; } };
+  if (dinnerPlus) dinnerPlus.onclick = () => { if (!isDinnerCutoffPassed() && isEditingMode) { dinnerCount++; if (dinnerVal) dinnerVal.textContent = dinnerCount; } };
+  if (dinnerMinus) dinnerMinus.onclick = () => { if (!isDinnerCutoffPassed() && isEditingMode && dinnerCount > 0) { dinnerCount--; if (dinnerVal) dinnerVal.textContent = dinnerCount; } };
+
+  if (editBtn) {
+    editBtn.onclick = () => {
+      isEditingMode = true;
+      updateUIState();
+    };
+  }
 
   if (saveBtn) {
     saveBtn.onclick = () => {
-      updateButtonStates();
       if (isLunchCutoffPassed() && isDinnerCutoffPassed()) return;
 
       set(ref(db, `meals/${todayStr}/${currentUser.name}`), {
@@ -220,12 +213,14 @@ if (welcomeName) {
         submitted: true
       })
         .then(() => {
-          hasSubmittedBefore = true;
+          isSubmitted = true;
+          isEditingMode = false;
           if (saveMsg) {
             saveMsg.style.color = "#16a34a";
-            saveMsg.textContent = "Meal saved successfully!";
-            setTimeout(() => updateButtonStates(), 2000);
+            saveMsg.textContent = "Saved successfully!";
+            setTimeout(() => { if (saveMsg) saveMsg.textContent = ""; }, 2500);
           }
+          updateUIState();
         })
         .catch(err => {
           if (saveMsg) {
@@ -236,28 +231,28 @@ if (welcomeName) {
     };
   }
 
-  // Real-time listener for member dashboard
   onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
     const data = snapshot.val() || {};
     const boardBody = document.getElementById("board-body");
-    let totalLunch = 0, totalDinner = 0, rowsHtml = "";
+    let rowsHtml = "";
 
     if (data[currentUser.name]) {
       lunchCount = data[currentUser.name].lunch || 0;
       dinnerCount = data[currentUser.name].dinner || 0;
-      hasSubmittedBefore = data[currentUser.name].submitted || false;
+      isSubmitted = data[currentUser.name].submitted || false;
+
+      if (isSubmitted && isEditingMode === true && !saveBtn.onclick) {
+        isEditingMode = false;
+      }
 
       if (lunchVal) lunchVal.textContent = lunchCount;
       if (dinnerVal) dinnerVal.textContent = dinnerCount;
     }
 
-    updateButtonStates();
+    updateUIState();
 
     MEMBERS_LIST.forEach((name) => {
       const meal = data[name] || { lunch: 0, dinner: 0 };
-      totalLunch += meal.lunch;
-      totalDinner += meal.dinner;
-
       rowsHtml += `<tr ${name === currentUser.name ? 'class="highlight-user"' : ''}>
         <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
         <td>${meal.lunch}</td>
