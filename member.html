@@ -58,9 +58,26 @@
       <p id="save-msg" class="status-msg"></p>
     </div>
 
-    <!-- Live Board -->
+    <!-- Live Board with Total Summary Bar -->
     <div class="card">
       <h3>📋 Today's Live Board</h3>
+      
+      <!-- Summary totals container -->
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; margin-bottom: 12px; font-size: 0.85rem;">
+        <div style="background: #f1f5f9; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+          <span style="color: #64748b; display: block; font-size: 0.75rem;">Total Lunch</span>
+          <strong id="total-lunch" style="color: #1e293b;">0</strong>
+        </div>
+        <div style="background: #f1f5f9; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+          <span style="color: #64748b; display: block; font-size: 0.75rem;">Total Dinner</span>
+          <strong id="total-dinner" style="color: #1e293b;">0</strong>
+        </div>
+        <div style="background: #f1f5f9; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
+          <span style="color: #64748b; display: block; font-size: 0.75rem;">Combined</span>
+          <strong id="total-day" style="color: #2563eb;">0</strong>
+        </div>
+      </div>
+
       <table class="meal-table">
         <thead>
           <tr>
