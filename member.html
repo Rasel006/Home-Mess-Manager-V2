@@ -5,6 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Member Dashboard - Home Mess Manager V2</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .preset-btns { display: flex; gap: 8px; margin-top: 8px; }
+    .preset-btn { flex: 1; padding: 6px; font-size: 0.85rem; border: 1px solid #cbd5e1; background: #f1f5f9; border-radius: 4px; cursor: pointer; }
+    .preset-btn:hover { background: #e2e8f0; }
+    .chip-container { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 8px; }
+    .chip { padding: 4px 10px; font-size: 0.8rem; background: #e2e8f0; border-radius: 12px; cursor: pointer; border: none; }
+    .chip:hover { background: #cbd5e1; }
+    .pending-tag { font-size: 0.75rem; background: #fef3c7; color: #b45309; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+  </style>
 </head>
 <body>
   <div class="dashboard-container">
@@ -42,7 +51,6 @@
         </div>
       </div>
 
-      <!-- Save & Edit Button Section -->
       <div style="display: flex; gap: 10px; margin-top: 15px;">
         <button id="save-meal-btn" class="btn btn-primary" style="flex: 1;">Save Meal</button>
         <button id="edit-meal-btn" class="btn btn-secondary" style="display: none; width: auto; padding: 0 16px;">✏️ Edit</button>
@@ -50,7 +58,94 @@
       <p id="save-msg" class="status-msg"></p>
     </div>
 
-    <!-- Live Board for Members -->
+    <!-- Monthly Overview & Due Status Card -->
+    <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e1;">
+      <h3 style="margin-bottom: 12px;">📊 Monthly Overview & Due Status</h3>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 15px;">
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.75rem;">Total Bazar</small>
+          <h4 id="mess-total-bazar" style="margin-top: 2px; color: #1e293b; font-size: 0.95rem;">0 Tk</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.75rem;">Total Meals</small>
+          <h4 id="mess-total-meals" style="margin-top: 2px; color: #1e293b; font-size: 0.95rem;">0</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.75rem;">Meal Rate</small>
+          <h4 id="current-meal-rate" style="margin-top: 2px; color: #2563eb; font-size: 0.95rem;">0 Tk</h4>
+        </div>
+      </div>
+
+      <hr style="border: 0; border-top: 1px dashed #cbd5e1; margin: 10px 0;">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 10px;">
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Your Total Meals</small>
+          <h4 id="user-total-meals" style="margin-top: 2px;">0</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Your Total Cost</small>
+          <h4 id="user-total-cost" style="margin-top: 2px; color: #d97706;">0 Tk</h4>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Your Deposit</small>
+          <h4 id="user-total-deposit" style="margin-top: 2px; color: #16a34a;">0 Tk</h4>
+        </div>
+        <div style="background: #fff; padding: 8px; border-radius: 6px; border: 1px solid #e2e8f0;">
+          <small style="color: #64748b; font-size: 0.8rem;">Balance Status</small>
+          <h4 id="user-due-status" style="margin-top: 2px;">0 Tk</h4>
+        </div>
+      </div>
+    </div>
+
+    <!-- Deposit Entry Card -->
+    <div class="card">
+      <h3>💵 Request Deposit Entry</h3>
+      <form id="deposit-form">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <input type="number" id="deposit-amount" placeholder="Enter Amount (Tk)" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+          <div class="preset-btns">
+            <button type="button" class="preset-btn" onclick="setDepositPreset(500)">+৳500</button>
+            <button type="button" class="preset-btn" onclick="setDepositPreset(1000)">+৳1000</button>
+            <button type="button" class="preset-btn" onclick="setDepositPreset(2000)">+৳2000</button>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Submit Deposit for Approval</button>
+      </form>
+    </div>
+
+    <!-- Bazar Cost Entry Card -->
+    <div class="card">
+      <h3>🛒 Request Bazar Expense</h3>
+      <form id="member-bazar-form">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <div class="chip-container">
+            <button type="button" class="chip" onclick="setBazarItem('Rice 🍚')">Rice 🍚</button>
+            <button type="button" class="chip" onclick="setBazarItem('Chicken 🍗')">Chicken 🍗</button>
+            <button type="button" class="chip" onclick="setBazarItem('Oil 🛢️')">Oil 🛢️</button>
+            <button type="button" class="chip" onclick="setBazarItem('Vegi 🥦')">Vegi 🥦</button>
+            <button type="button" class="chip" onclick="setBazarItem('Fish 🐟')">Fish 🐟</button>
+          </div>
+          <input type="text" id="member-bazar-item" placeholder="Item Name" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+          <input type="number" id="member-bazar-amount" placeholder="Cost (Tk)" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width: 100%;">Submit Expense for Approval</button>
+      </form>
+    </div>
+
+    <!-- Pending Requests List for User -->
+    <div class="card">
+      <h3>⏳ Your Pending Requests</h3>
+      <ul id="member-pending-list" style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
+        <li style="color: #64748b;">Loading pending requests...</li>
+      </ul>
+    </div>
+
+    <!-- Live Board -->
     <div class="card">
       <h3>📋 Today's Live Board</h3>
       <table class="meal-table">
@@ -79,6 +174,10 @@
 
   </div>
 
+  <script>
+    function setDepositPreset(val) { document.getElementById("deposit-amount").value = val; }
+    function setBazarItem(name) { document.getElementById("member-bazar-item").value = name; }
+  </script>
   <script type="module" src="app.js"></script>
 </body>
 </html>
