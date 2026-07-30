@@ -391,7 +391,7 @@ if (welcomeName) {
   onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
     const data = snapshot.val() || {};
     const boardBody = document.getElementById("board-body");
-    let rowsHtml = "";
+    let totalLunch = 0, totalDinner = 0, rowsHtml = "";
 
     if (data[currentUser.name]) {
       lunchCount = data[currentUser.name].lunch || 0;
@@ -410,6 +410,9 @@ if (welcomeName) {
 
     MEMBERS_LIST.forEach((name) => {
       const meal = data[name] || { lunch: 0, dinner: 0 };
+      totalLunch += (meal.lunch || 0);
+      totalDinner += (meal.dinner || 0);
+
       rowsHtml += `<tr ${name === currentUser.name ? 'class="highlight-user"' : ''}>
         <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
         <td>${meal.lunch}</td>
@@ -418,6 +421,14 @@ if (welcomeName) {
     });
 
     if (boardBody) boardBody.innerHTML = rowsHtml;
+
+    const totalLunchEl = document.getElementById("total-lunch");
+    const totalDinnerEl = document.getElementById("total-dinner");
+    const totalDayEl = document.getElementById("total-day");
+
+    if (totalLunchEl) totalLunchEl.textContent = totalLunch;
+    if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
+    if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
   });
 
   const logoutBtn = document.getElementById("logout-btn");
@@ -805,7 +816,6 @@ if (historyDateSelect) {
   const historyBoardBody = document.getElementById("history-board-body");
   const historyBazarList = document.getElementById("history-bazar-list");
 
-  // Handle Back Button Action reliably
   if (backBtn) {
     backBtn.onclick = (e) => {
       e.preventDefault();
@@ -818,7 +828,6 @@ if (historyDateSelect) {
     };
   }
 
-  // Load and Render History Details for Selected Date
   async function loadHistoryForDate(targetDate) {
     if (!targetDate) {
       if (selectedDateLabel) selectedDateLabel.textContent = "--";
@@ -830,7 +839,6 @@ if (historyDateSelect) {
     if (selectedDateLabel) selectedDateLabel.textContent = targetDate;
 
     try {
-      // Fetch Meals Data
       const mealsSnap = await get(ref(db, `meals/${targetDate}`));
       const mealsData = mealsSnap.exists() ? mealsSnap.val() : {};
 
@@ -847,7 +855,6 @@ if (historyDateSelect) {
       });
       if (historyBoardBody) historyBoardBody.innerHTML = tableHtml;
 
-      // Fetch Bazar Data
       const bazarSnap = await get(ref(db, `bazar/${targetDate}`));
       if (bazarSnap.exists()) {
         const bazarData = bazarSnap.val();
@@ -866,7 +873,6 @@ if (historyDateSelect) {
     }
   }
 
-  // Dynamic Population of Dates Dropdown
   async function populateAvailableDates() {
     try {
       const datesSet = new Set();
