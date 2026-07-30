@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Home Mess Manager V2 - Login</title>
+  
+  <style>
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: #f1f5f9;
+      color: #333;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 400px;
+    }
+
+    .card {
+      background: #ffffff;
+      padding: 30px 24px;
+      border-radius: 16px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.08);
+    }
+
+    h2 {
+      font-size: 1.5rem;
+      color: #0f172a;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+
+    .subtitle {
+      font-size: 0.88rem;
+      color: #64748b;
+      text-align: center;
+      margin-bottom: 24px;
+    }
+
+    .form-group {
+      margin-bottom: 18px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+      color: #334155;
+    }
+
+    select, input {
+      width: 100%;
+      padding: 12px 14px;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px;
+      font-size: 1rem;
+      background-color: #fff;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    select:focus, input:focus {
+      border-color: #2563eb;
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+    }
+
+    .btn {
+      width: 100%;
+      padding: 13px;
+      border: none;
+      border-radius: 10px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-primary {
+      background-color: #2563eb;
+      color: #ffffff;
+    }
+
+    .btn-primary:active {
+      background-color: #1d4ed8;
+    }
+
+    .error-text {
+      color: #ef4444;
+      font-size: 0.85rem;
+      text-align: center;
+      margin-top: 14px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="card">
+      <h2>🏠 Home Mess Manager</h2>
+      <p class="subtitle">Select your account to continue</p>
+      
+      <form id="login-form">
+        <div class="form-group">
+          <label for="user-select">Select Member</label>
+          <select id="user-select" required>
+            <option value="" disabled selected>-- Select Name --</option>
+            <option value="Rizu" data-role="admin">👑 Rizu (Admin)</option>
+            <option value="Jim" data-role="member">Jim</option>
+            <option value="Maruf" data-role="member">Maruf</option>
+            <option value="Arafat" data-role="member">Arafat</option>
+            <option value="Shawon" data-role="member">Shawon</option>
+            <option value="Tanvir" data-role="member">Tanvir</option>
+            <option value="Sourov" data-role="member">Sourov</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="pin-input">Enter PIN</label>
+          <input type="password" id="pin-input" placeholder="Enter PIN (Default: 1234)" required />
+        </div>
+
+        <button type="submit" class="btn btn-primary">Login</button>
+      </form>
+      <p id="error-msg" class="error-text"></p>
+    </div>
+  </div>
+
+  <script type="module" src="app.js"></script>
+</body>
+</html>
