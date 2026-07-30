@@ -3,25 +3,24 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Meal History - Home Mess Manager V2</title>
+  <title>Daily History - Home Mess Manager V2</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <div class="dashboard-container">
     
-    <header class="top-header">
+    <header class="top-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
       <h2>📜 Daily History</h2>
-      <a href="admin.html" class="nav-link">⬅ Back to Admin</a>
+      <a id="back-btn" href="#" class="nav-link">← Back</a>
     </header>
 
-    <!-- Phase 7: History Query -->
+    <!-- Date Picker Card -->
     <div class="card">
-      <div class="form-group">
-        <label for="history-date">Select Date:</label>
-        <input type="date" id="history-date" />
-      </div>
+      <label for="history-date" style="font-weight: 600; display: block; margin-bottom: 8px;">Select Date:</label>
+      <input type="date" id="history-date" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem;">
     </div>
 
+    <!-- History Table Card -->
     <div class="card">
       <h3>Meals on <span id="selected-history-date">--</span></h3>
       <table class="meal-table">
@@ -34,7 +33,7 @@
           </tr>
         </thead>
         <tbody id="history-board-body">
-          <tr><td colspan="4">Choose a date above.</td></tr>
+          <tr><td colspan="4">Loading...</td></tr>
         </tbody>
       </table>
     </div>
