@@ -3,41 +3,37 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Dashboard - Home Mess Manager V2</title>
+  <title>Admin Panel - Home Mess Manager V2</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .btn-copy { background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
+    .btn-copy:hover { background: #0369a1; }
+    .approval-card { border-left: 4px solid #f59e0b; background: #fffbeb; }
+    .action-btn-group { display: flex; gap: 6px; margin-top: 6px; }
+    .btn-approve { background: #16a34a; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+    .btn-reject { background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
+  </style>
 </head>
 <body>
   <div class="dashboard-container">
     
     <header class="top-header">
-      <h2>👑 Admin Panel (Rizu)</h2>
+      <h2>⚙️ Admin Control Panel</h2>
       <a href="history.html" class="nav-link">📜 History</a>
       <button id="logout-btn" class="btn-logout">Logout</button>
     </header>
 
-    <!-- Phase 6: Admin Cooking Summary -->
-    <div class="card summary-card">
-      <h3>🍛 Today's Cooking Summary</h3>
-      <div class="summary-grid">
-        <div class="summary-box">
-          <span class="label">Lunch</span>
-          <span id="total-lunch" class="count">0</span>
-        </div>
-        <div class="summary-box">
-          <span class="label">Dinner</span>
-          <span id="total-dinner" class="count">0</span>
-        </div>
-        <div class="summary-box total-box">
-          <span class="label">Total</span>
-          <span id="total-day" class="count">0</span>
-        </div>
+    <!-- Admin Approval Requests Card -->
+    <div class="card approval-card">
+      <h3>🔔 Pending Approvals (<span id="pending-count">0</span>)</h3>
+      <div id="approval-list" style="margin-top: 10px;">
+        <p style="color: #64748b; font-size: 0.85rem;">No pending requests at the moment.</p>
       </div>
     </div>
 
-    <!-- Admin's Own Meal Entry -->
+    <!-- Admin Meal Entry -->
     <div class="card">
-      <h3>🍽️ Rizu's Meal Entry (Today: <span id="current-date">--</span>)</h3>
-      
+      <h3>🍽️ Admin Meal Control (<span id="current-date">--</span>)</h3>
       <div class="meal-input-group">
         <div class="meal-row">
           <span>Lunch Meal:</span>
@@ -47,7 +43,6 @@
             <button type="button" class="btn-counter" id="lunch-plus">+</button>
           </div>
         </div>
-
         <div class="meal-row">
           <span>Dinner Meal:</span>
           <div class="counter-control">
@@ -57,14 +52,13 @@
           </div>
         </div>
       </div>
-
-      <button id="save-meal-btn" class="btn btn-primary">Save Admin Meal</button>
+      <button id="save-meal-btn" class="btn btn-primary" style="width: 100%; margin-top: 15px;">Save Admin Meal</button>
       <p id="save-msg" class="status-msg"></p>
     </div>
 
-    <!-- Real-Time Board for Admin with Direct Controls -->
+    <!-- Live Board -->
     <div class="card">
-      <h3>📋 Today's Live Meal Board</h3>
+      <h3>⚡ Today's Live Board & Instant Edit</h3>
       <table class="meal-table">
         <thead>
           <tr>
@@ -75,70 +69,97 @@
           </tr>
         </thead>
         <tbody id="board-body">
-          <tr><td colspan="4">Loading live data...</td></tr>
+          <tr><td colspan="4">Loading live board...</td></tr>
         </tbody>
       </table>
-    </div>
-
-    <!-- Phase 8 & 10: Monthly Summary & Settlement -->
-    <div class="card">
-      <h3>📊 Monthly Report & Calculation</h3>
-      <div class="form-group">
-        <label for="month-select">Select Month:</label>
-        <input type="month" id="month-select" />
-      </div>
-
-      <div class="summary-grid" style="margin-top: 12px;">
-        <div class="summary-box">
-          <span class="label">Total Meals</span>
-          <span id="monthly-total-meals" class="count">0</span>
-        </div>
-        <div class="summary-box">
-          <span class="label">Total Bazar</span>
-          <span id="monthly-total-bazar" class="count">0 Tk</span>
-        </div>
-        <div class="summary-box total-box">
-          <span class="label">Meal Rate</span>
-          <span id="calculated-meal-rate" class="count">0 Tk</span>
-        </div>
+      <div style="margin-top: 12px; font-weight: bold; font-size: 0.9rem; color: #334155;">
+        Today Total: Lunch: <span id="total-lunch">0</span> | Dinner: <span id="total-dinner">0</span> | Total: <span id="total-day">0</span>
       </div>
     </div>
 
-    <!-- Phase 9: Add Bazar Expense -->
+    <!-- Direct Admin Deposit Entry -->
     <div class="card">
-      <h3>🛒 Add Bazar Expense</h3>
-      <form id="bazar-form">
-        <div class="form-group">
-          <label for="bazar-item">Item Name</label>
-          <input type="text" id="bazar-item" placeholder="e.g. Rice, Oil, Meat" required />
+      <h3>💵 Direct Deposit Entry (Auto-Approved)</h3>
+      <form id="admin-deposit-form">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <select id="admin-deposit-user" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+            <option value="">Select Member</option>
+            <option value="Rizu">Rizu (Admin)</option>
+            <option value="Jim">Jim</option>
+            <option value="Maruf">Maruf</option>
+            <option value="Arafat">Arafat</option>
+            <option value="Shawon">Shawon</option>
+            <option value="Tanvir">Tanvir</option>
+            <option value="Sourov">Sourov</option>
+          </select>
+          <input type="number" id="admin-deposit-amount" placeholder="Enter Amount (Tk)" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
         </div>
-        <div class="form-group">
-          <label for="bazar-amount">Amount (Tk)</label>
-          <input type="number" id="bazar-amount" placeholder="e.g. 1200" required />
-        </div>
-        <div class="form-group">
-          <label for="bazar-date">Date</label>
-          <input type="date" id="bazar-date" required />
-        </div>
-        <button type="submit" class="btn btn-primary">Save Expense</button>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">Add Deposit</button>
       </form>
     </div>
 
-    <!-- Phase 10: Member Settlement Board -->
+    <!-- Direct Admin Bazar Entry -->
     <div class="card">
-      <h3>💳 Member Settlement Board</h3>
+      <h3>🛒 Direct Bazar Entry (Auto-Approved)</h3>
+      <form id="bazar-form">
+        <div class="form-group" style="margin-bottom: 10px;">
+          <input type="text" id="bazar-item" placeholder="Item Name" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+          <input type="number" id="bazar-amount" placeholder="Cost (Tk)" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px;">
+          <input type="date" id="bazar-date" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+        </div>
+        <button type="submit" class="btn btn-secondary" style="width: 100%;">Save Bazar Entry</button>
+      </form>
+    </div>
+
+    <!-- Monthly Settlement Board -->
+    <div class="card">
+      <h3>📊 Monthly Settlement Overview</h3>
+      <div class="form-group" style="margin-bottom: 12px;">
+        <label for="month-select" style="font-weight: 600;">Select Month:</label>
+        <input type="month" id="month-select" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+      </div>
+
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 12px;">
+        <div style="background: #f1f5f9; padding: 8px; border-radius: 6px;">
+          <small>Total Meals</small>
+          <h4 id="monthly-total-meals" style="margin-top: 2px;">0</h4>
+        </div>
+        <div style="background: #f1f5f9; padding: 8px; border-radius: 6px;">
+          <small>Total Bazar</small>
+          <h4 id="monthly-total-bazar" style="margin-top: 2px;">0 Tk</h4>
+        </div>
+        <div style="background: #f1f5f9; padding: 8px; border-radius: 6px;">
+          <small>Meal Rate</small>
+          <h4 id="calculated-meal-rate" style="margin-top: 2px; color: #2563eb;">0.00 Tk</h4>
+        </div>
+      </div>
+
       <table class="meal-table">
         <thead>
           <tr>
             <th>Member</th>
             <th>Meals</th>
-            <th>Cost</th>
+            <th>Deposit</th>
+            <th>Total Cost</th>
+            <th>Status</th>
           </tr>
         </thead>
         <tbody id="settlement-board-body">
-          <tr><td colspan="3">Select a month to calculate...</td></tr>
+          <tr><td colspan="5">Loading calculation...</td></tr>
         </tbody>
       </table>
+
+      <button id="copy-summary-btn" class="btn-copy">📋 Copy Summary for Messenger</button>
+    </div>
+
+    <!-- Change Admin PIN Card -->
+    <div class="card">
+      <h3>🔑 Change Admin PIN</h3>
+      <div class="form-group" style="margin-bottom: 10px;">
+        <input type="password" id="new-admin-pin-input" placeholder="Enter New Admin PIN / Password" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
+      </div>
+      <button id="update-admin-pin-btn" class="btn btn-secondary" style="width: 100%;">Update Admin PIN</button>
+      <p id="admin-pin-msg" class="status-msg" style="margin-top: 8px;"></p>
     </div>
 
   </div>
