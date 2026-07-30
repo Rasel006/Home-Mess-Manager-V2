@@ -1,5 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getDatabase, ref, set, get, push, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
+import { getDatabase, ref, set, get, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // FIREBASE CONFIGURATION
 const firebaseConfig = {
@@ -40,11 +40,24 @@ if (loginForm) {
     errorMsg.textContent = "Verifying...";
 
     if (role === "admin") {
-      if (inputPin === "Admin123") {
-        sessionStorage.setItem("currentUser", JSON.stringify({ name: username, role: "admin" }));
-        window.location.href = "admin.html";
-      } else {
-        errorMsg.textContent = "Invalid Admin PIN!";
+      try {
+        const adminPinSnap = await get(ref(db, "users/Rizu/pin"));
+        let storedAdminPin = "Admin123";
+
+        if (adminPinSnap.exists()) {
+          storedAdminPin = adminPinSnap.val();
+        } else {
+          await set(ref(db, "users/Rizu/pin"), "Admin123");
+        }
+
+        if (inputPin === storedAdminPin) {
+          sessionStorage.setItem("currentUser", JSON.stringify({ name: username, role: "admin" }));
+          window.location.href = "admin.html";
+        } else {
+          errorMsg.textContent = "Invalid Admin PIN!";
+        }
+      } catch (err) {
+        errorMsg.textContent = "Admin Login error: " + err.message;
       }
       return;
     }
@@ -87,7 +100,155 @@ if (welcomeName) {
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
 
-  // PIN Update Logic
+  // Deposit Request Submit (Pending)
+  const depositForm = document.getElementById("deposit-form");
+  if (depositForm) {
+    depositForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const amount = Number(document.getElementById("deposit-amount").value);
+      if (amount <= 0) return;
+
+      push(ref(db, "pending_requests"), {
+        type: "deposit",
+        userName: currentUser.name,
+        amount: amount,
+        date: todayStr
+      }).then(() => {
+        alert("Deposit request sent to Admin for approval!");
+        depositForm.reset();
+      });
+    });
+  }
+
+  // Bazar Request Submit (Pending)
+  const memberBazarForm = document.getElementById("member-bazar-form");
+  if (memberBazarForm) {
+    memberBazarForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const item = document.getElementById("member-bazar-item").value;
+      const amount = Number(document.getElementById("member-bazar-amount").value);
+
+      push(ref(db, "pending_requests"), {
+        type: "bazar",
+        userName: currentUser.name,
+        item: item,
+        amount: amount,
+        date: todayStr
+      }).then(() => {
+        alert("Bazar expense request sent to Admin for approval!");
+        memberBazarForm.reset();
+      });
+    });
+  }
+
+  // Real-time Pending List for User
+  onValue(ref(db, "pending_requests"), (snapshot) => {
+    const listEl = document.getElementById("member-pending-list");
+    if (!listEl) return;
+
+    if (!snapshot.exists()) {
+      listEl.innerHTML = `<li style="color: #64748b;">No pending requests.</li>`;
+      return;
+    }
+
+    const data = snapshot.val();
+    let html = "";
+    Object.values(data).forEach(req => {
+      if (req.userName === currentUser.name) {
+        const desc = req.type === "deposit" 
+          ? `Deposit: ৳${req.amount}` 
+          : `Bazar: ${req.item} (৳${req.amount})`;
+        html += `<li style="margin-bottom: 6px; padding: 6px; background: #fff; border-radius: 4px; border: 1px solid #cbd5e1;">
+          ${desc} <span class="pending-tag">⏳ Pending Approval</span>
+        </li>`;
+      }
+    });
+
+    listEl.innerHTML = html || `<li style="color: #64748b;">No pending requests.</li>`;
+  });
+
+  async function calculateUserFinancials() {
+    const now = new Date();
+    const targetYear = now.getFullYear();
+    const targetMonth = now.getMonth() + 1;
+
+    let userMeals = 0;
+    let totalMessMeals = 0;
+    let totalMessBazar = 0;
+    let userDeposit = 0;
+
+    const depositSnap = await get(ref(db, `deposits/${currentUser.name}`));
+    if (depositSnap.exists()) {
+      const deposits = depositSnap.val();
+      Object.values(deposits).forEach(d => {
+        userDeposit += (d.amount || 0);
+      });
+    }
+
+    const mealsSnap = await get(ref(db, "meals"));
+    if (mealsSnap.exists()) {
+      const allMeals = mealsSnap.val();
+      Object.keys(allMeals).forEach(dateStr => {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime()) && d.getFullYear() === targetYear && (d.getMonth() + 1) === targetMonth) {
+          Object.keys(allMeals[dateStr]).forEach(mem => {
+            const sum = (allMeals[dateStr][mem].lunch || 0) + (allMeals[dateStr][mem].dinner || 0);
+            totalMessMeals += sum;
+            if (mem === currentUser.name) {
+              userMeals += sum;
+            }
+          });
+        }
+      });
+    }
+
+    const bazarSnap = await get(ref(db, "bazar"));
+    if (bazarSnap.exists()) {
+      const allBazar = bazarSnap.val();
+      Object.keys(allBazar).forEach(dateStr => {
+        const d = new Date(dateStr);
+        if (!isNaN(d.getTime()) && d.getFullYear() === targetYear && (d.getMonth() + 1) === targetMonth) {
+          Object.values(allBazar[dateStr]).forEach(b => {
+            totalMessBazar += (b.amount || 0);
+          });
+        }
+      });
+    }
+
+    const mealRate = totalMessMeals > 0 ? (totalMessBazar / totalMessMeals) : 0;
+    const userTotalCost = userMeals * mealRate;
+    const dueAmount = userTotalCost - userDeposit;
+
+    const messBazarEl = document.getElementById("mess-total-bazar");
+    const messMealsEl = document.getElementById("mess-total-meals");
+    const mealRateEl = document.getElementById("current-meal-rate");
+    
+    const userMealsEl = document.getElementById("user-total-meals");
+    const userCostEl = document.getElementById("user-total-cost");
+    const depositEl = document.getElementById("user-total-deposit");
+    const dueEl = document.getElementById("user-due-status");
+
+    if (messBazarEl) messBazarEl.textContent = `${totalMessBazar} Tk`;
+    if (messMealsEl) messMealsEl.textContent = totalMessMeals;
+    if (mealRateEl) mealRateEl.textContent = `${mealRate.toFixed(2)} Tk`;
+
+    if (userMealsEl) userMealsEl.textContent = userMeals;
+    if (userCostEl) userCostEl.textContent = `${userTotalCost.toFixed(2)} Tk`;
+    if (depositEl) depositEl.textContent = `${userDeposit} Tk`;
+
+    if (dueEl) {
+      if (dueAmount > 0) {
+        dueEl.style.color = "#dc2626";
+        dueEl.textContent = `${dueAmount.toFixed(2)} Tk (Due)`;
+      } else {
+        dueEl.style.color = "#16a34a";
+        dueEl.textContent = `${Math.abs(dueAmount).toFixed(2)} Tk (Get Money)`;
+      }
+    }
+  }
+
+  calculateUserFinancials();
+
   const updatePinBtn = document.getElementById("update-pin-btn");
   if (updatePinBtn) {
     updatePinBtn.onclick = () => {
@@ -130,13 +291,8 @@ if (welcomeName) {
   const dinnerPlus = document.getElementById("dinner-plus");
   const dinnerMinus = document.getElementById("dinner-minus");
 
-  function isLunchCutoffPassed() {
-    return new Date().getHours() >= 12; // 12:00 PM Cutoff
-  }
-
-  function isDinnerCutoffPassed() {
-    return new Date().getHours() >= 20; // 08:00 PM Cutoff
-  }
+  function isLunchCutoffPassed() { return new Date().getHours() >= 12; }
+  function isDinnerCutoffPassed() { return new Date().getHours() >= 20; }
 
   function updateUIState() {
     const lunchLocked = isLunchCutoffPassed();
@@ -221,6 +377,7 @@ if (welcomeName) {
             setTimeout(() => { if (saveMsg) saveMsg.textContent = ""; }, 2500);
           }
           updateUIState();
+          calculateUserFinancials();
         })
         .catch(err => {
           if (saveMsg) {
@@ -284,6 +441,61 @@ if (bazarForm) {
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
 
+  // Real-time Pending Approvals Processing
+  onValue(ref(db, "pending_requests"), (snapshot) => {
+    const approvalList = document.getElementById("approval-list");
+    const countEl = document.getElementById("pending-count");
+    if (!approvalList) return;
+
+    if (!snapshot.exists()) {
+      approvalList.innerHTML = `<p style="color: #64748b; font-size: 0.85rem;">No pending requests at the moment.</p>`;
+      if (countEl) countEl.textContent = "0";
+      return;
+    }
+
+    const data = snapshot.val();
+    const keys = Object.keys(data);
+    if (countEl) countEl.textContent = keys.length;
+
+    let html = "";
+    keys.forEach(key => {
+      const req = data[key];
+      const desc = req.type === "deposit"
+        ? `💵 <strong>${req.userName}</strong> requested Deposit: <strong>৳${req.amount}</strong>`
+        : `🛒 <strong>${req.userName}</strong> submitted Bazar: <strong>${req.item} (৳${req.amount})</strong>`;
+
+      html += `<div style="background: #fff; padding: 8px 12px; border-radius: 6px; border: 1px solid #fde68a; margin-bottom: 8px;">
+        <div style="font-size: 0.85rem; color: #1e293b;">${desc}</div>
+        <div class="action-btn-group">
+          <button class="btn-approve" onclick="approveRequest('${key}')">✓ Approve</button>
+          <button class="btn-reject" onclick="rejectRequest('${key}')">✗ Reject</button>
+        </div>
+      </div>`;
+    });
+
+    approvalList.innerHTML = html;
+  });
+
+  // Global functions for Admin Approval Actions
+  window.approveRequest = async (key) => {
+    const snap = await get(ref(db, `pending_requests/${key}`));
+    if (!snap.exists()) return;
+
+    const req = snap.val();
+    if (req.type === "deposit") {
+      await push(ref(db, `deposits/${req.userName}`), { amount: req.amount, date: req.date });
+    } else if (req.type === "bazar") {
+      await push(ref(db, `bazar/${req.date}`), { item: req.item, amount: req.amount, addedBy: req.userName });
+    }
+
+    await remove(ref(db, `pending_requests/${key}`));
+    loadMonthlyData(monthSelect.value);
+  };
+
+  window.rejectRequest = async (key) => {
+    await remove(ref(db, `pending_requests/${key}`));
+  };
+
   let adminLunchCount = 0;
   let adminDinnerCount = 0;
   const lunchVal = document.getElementById("lunch-val");
@@ -323,7 +535,26 @@ if (bazarForm) {
     }
   }
 
-  // Admin Direct Real-Time Edit Function
+  const adminDepositForm = document.getElementById("admin-deposit-form");
+  if (adminDepositForm) {
+    adminDepositForm.addEventListener("submit", (e) => {
+      e.preventDefault();
+      const memberName = document.getElementById("admin-deposit-user").value;
+      const amount = Number(document.getElementById("admin-deposit-amount").value);
+
+      if (!memberName || amount <= 0) return;
+
+      push(ref(db, `deposits/${memberName}`), {
+        amount: amount,
+        date: todayStr
+      }).then(() => {
+        alert(`Deposit of ${amount} Tk added for ${memberName}!`);
+        adminDepositForm.reset();
+        loadMonthlyData(monthSelect.value);
+      });
+    });
+  }
+
   window.updateMemberMeal = (memberName, mealType, change) => {
     const memberRef = ref(db, `meals/${todayStr}/${memberName}`);
     get(memberRef).then((snapshot) => {
@@ -339,7 +570,6 @@ if (bazarForm) {
     });
   };
 
-  // Real-Time Board for Admin with Live Controls
   onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
     const data = snapshot.val() || {};
     const boardBody = document.getElementById("board-body");
@@ -406,21 +636,30 @@ if (bazarForm) {
   });
 
   async function loadMonthlyData(selectedYearMonth) {
-    if (!selectedYearMonth) {
-      document.getElementById("monthly-total-meals").textContent = "0";
-      document.getElementById("monthly-total-bazar").textContent = "0 Tk";
-      document.getElementById("calculated-meal-rate").textContent = "0.00 Tk";
-      const board = document.getElementById("settlement-board-body");
-      if (board) board.innerHTML = `<tr><td colspan="3">Select a month to calculate...</td></tr>`;
-      return;
-    }
+    if (!selectedYearMonth) return;
 
     const [targetYear, targetMonth] = selectedYearMonth.split("-").map(Number);
 
     let totalMeals = 0;
     let totalBazar = 0;
     const memberMealCounts = {};
-    MEMBERS_LIST.forEach(m => memberMealCounts[m] = 0);
+    const memberDeposits = {};
+    MEMBERS_LIST.forEach(m => {
+      memberMealCounts[m] = 0;
+      memberDeposits[m] = 0;
+    });
+
+    const depositSnap = await get(ref(db, "deposits"));
+    if (depositSnap.exists()) {
+      const allDeposits = depositSnap.val();
+      Object.keys(allDeposits).forEach(mem => {
+        if (memberDeposits[mem] !== undefined) {
+          Object.values(allDeposits[mem]).forEach(d => {
+            memberDeposits[mem] += (d.amount || 0);
+          });
+        }
+      });
+    }
 
     const mealsSnap = await get(ref(db, "meals"));
     if (mealsSnap.exists()) {
@@ -466,10 +705,55 @@ if (bazarForm) {
       let html = "";
       MEMBERS_LIST.forEach(m => {
         const meals = memberMealCounts[m];
-        const cost = (meals * mealRate).toFixed(2);
-        html += `<tr><td>${m} ${m === 'Rizu' ? '(Admin)' : ''}</td><td>${meals}</td><td>${cost} Tk</td></tr>`;
+        const cost = (meals * mealRate);
+        const deposit = memberDeposits[m] || 0;
+        const due = cost - deposit;
+
+        let statusText = due > 0 
+          ? `<span style="color: #dc2626; font-weight: bold;">${due.toFixed(2)} Tk Due</span>` 
+          : `<span style="color: #16a34a; font-weight: bold;">${Math.abs(due).toFixed(2)} Tk Adv</span>`;
+
+        html += `<tr>
+          <td>${m} ${m === 'Rizu' ? '(Admin)' : ''}</td>
+          <td>${meals}</td>
+          <td>${deposit} Tk</td>
+          <td>${cost.toFixed(2)} Tk</td>
+          <td>${statusText}</td>
+        </tr>`;
       });
       board.innerHTML = html;
+    }
+
+    const copyBtn = document.getElementById("copy-summary-btn");
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        let msg = `📢 Monthly Mess Summary (${selectedYearMonth})\n`;
+        msg += `----------------------------------\n`;
+        msg += `🥣 Total Meals: ${totalMeals}\n`;
+        msg += `🛒 Total Bazar: ৳${totalBazar}\n`;
+        msg += `💡 Meal Rate: ৳${mealRate.toFixed(2)}\n\n`;
+        msg += `Member Status:\n`;
+
+        MEMBERS_LIST.forEach(m => {
+          const meals = memberMealCounts[m];
+          const cost = (meals * mealRate);
+          const deposit = memberDeposits[m] || 0;
+          const due = cost - deposit;
+
+          if (due > 0) {
+            msg += `• ${m}: ৳${due.toFixed(2)} (Due)\n`;
+          } else {
+            msg += `• ${m}: ৳${Math.abs(due).toFixed(2)} (Get Back)\n`;
+          }
+        });
+
+        msg += `----------------------------------\n`;
+        msg += `Please clear your dues on time!`;
+
+        navigator.clipboard.writeText(msg).then(() => {
+          alert("Monthly summary copied to clipboard! Ready to paste into Messenger.");
+        });
+      };
     }
   }
 
@@ -478,6 +762,33 @@ if (bazarForm) {
   }
   loadMonthlyData(currentMonthStr);
 
+  // Update Admin PIN Handler
+  const updateAdminPinBtn = document.getElementById("update-admin-pin-btn");
+  if (updateAdminPinBtn) {
+    updateAdminPinBtn.onclick = () => {
+      const newPin = document.getElementById("new-admin-pin-input").value.trim();
+      const pinMsg = document.getElementById("admin-pin-msg");
+
+      if (newPin.length < 4) {
+        pinMsg.style.color = "#ef4444";
+        pinMsg.textContent = "Admin PIN must be at least 4 characters.";
+        return;
+      }
+
+      set(ref(db, "users/Rizu/pin"), newPin)
+        .then(() => {
+          pinMsg.style.color = "#16a34a";
+          pinMsg.textContent = "Admin PIN updated successfully!";
+          document.getElementById("new-admin-pin-input").value = "";
+          setTimeout(() => pinMsg.textContent = "", 3000);
+        })
+        .catch(err => {
+          pinMsg.style.color = "#ef4444";
+          pinMsg.textContent = err.message;
+        });
+    };
+  }
+
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.onclick = () => {
@@ -485,53 +796,4 @@ if (bazarForm) {
       window.location.href = "index.html";
     };
   }
-}
-
-// ------------------------------------
-// 4. HISTORY LOGIC (history.html)
-// ------------------------------------
-const historyDateInput = document.getElementById("history-date");
-if (historyDateInput) {
-  const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
-  const backBtn = document.getElementById("back-btn");
-
-  // Dynamic Back Button based on user role
-  if (backBtn && currentUser) {
-    if (currentUser.role === "admin") {
-      backBtn.textContent = "← Back to Admin";
-      backBtn.href = "admin.html";
-    } else {
-      backBtn.textContent = "← Back to Dashboard";
-      backBtn.href = "member.html";
-    }
-  }
-
-  const todayStr = getTodayDateStr();
-  historyDateInput.value = todayStr;
-
-  function fetchHistory(dateStr) {
-    const selDateEl = document.getElementById("selected-history-date");
-    if (selDateEl) selDateEl.textContent = dateStr;
-
-    get(ref(db, `meals/${dateStr}`)).then(snapshot => {
-      const data = snapshot.val() || {};
-      const body = document.getElementById("history-board-body");
-      let html = "";
-
-      MEMBERS_LIST.forEach(m => {
-        const meal = data[m] || { lunch: 0, dinner: 0 };
-        const sum = (meal.lunch || 0) + (meal.dinner || 0);
-        html += `<tr>
-          <td>${m} ${m === 'Rizu' ? '(Admin)' : ''}</td>
-          <td>${meal.lunch || 0}</td>
-          <td>${meal.dinner || 0}</td>
-          <td><strong>${sum}</strong></td>
-        </tr>`;
-      });
-      if (body) body.innerHTML = html;
-    });
-  }
-
-  historyDateInput.addEventListener("change", (e) => fetchHistory(e.target.value));
-  fetchHistory(todayStr);
 }
