@@ -116,6 +116,7 @@ if (welcomeName) {
 
   let lunchCount = 0;
   let dinnerCount = 0;
+  let hasSubmittedBefore = false;
 
   const lunchVal = document.getElementById("lunch-val");
   const dinnerVal = document.getElementById("dinner-val");
@@ -127,7 +128,7 @@ if (welcomeName) {
   const dinnerPlus = document.getElementById("dinner-plus");
   const dinnerMinus = document.getElementById("dinner-minus");
 
-  // Helper function to check member time cutoffs
+  // Time cutoff functions
   function isLunchCutoffPassed() {
     return new Date().getHours() >= 12; // 12:00 PM cutoff
   }
@@ -161,7 +162,13 @@ if (welcomeName) {
         saveBtn.disabled = false;
         saveBtn.style.backgroundColor = "#2563eb";
         saveBtn.style.cursor = "pointer";
-        saveBtn.textContent = "Save Meal";
+        
+        // Show 'Edit Meal' if submitted before or counts exist
+        if (hasSubmittedBefore || lunchCount > 0 || dinnerCount > 0) {
+          saveBtn.textContent = "✏️ Edit Meal";
+        } else {
+          saveBtn.textContent = "Save Meal";
+        }
       }
       let msg = "";
       if (lunchLocked) msg += "Lunch locked (past 12 PM). ";
@@ -173,10 +180,34 @@ if (welcomeName) {
     }
   }
 
-  if (lunchPlus) lunchPlus.onclick = () => { if (!isLunchCutoffPassed()) { lunchCount++; lunchVal.textContent = lunchCount; } };
-  if (lunchMinus) lunchMinus.onclick = () => { if (!isLunchCutoffPassed() && lunchCount > 0) { lunchCount--; lunchVal.textContent = lunchCount; } };
-  if (dinnerPlus) dinnerPlus.onclick = () => { if (!isDinnerCutoffPassed()) { dinnerCount++; dinnerVal.textContent = dinnerCount; } };
-  if (dinnerMinus) dinnerMinus.onclick = () => { if (!isDinnerCutoffPassed() && dinnerCount > 0) { dinnerCount--; dinnerVal.textContent = dinnerCount; } };
+  if (lunchPlus) lunchPlus.onclick = () => { 
+    if (!isLunchCutoffPassed()) { 
+      lunchCount++; 
+      if (lunchVal) lunchVal.textContent = lunchCount; 
+      updateButtonStates();
+    } 
+  };
+  if (lunchMinus) lunchMinus.onclick = () => { 
+    if (!isLunchCutoffPassed() && lunchCount > 0) { 
+      lunchCount--; 
+      if (lunchVal) lunchVal.textContent = lunchCount; 
+      updateButtonStates();
+    } 
+  };
+  if (dinnerPlus) dinnerPlus.onclick = () => { 
+    if (!isDinnerCutoffPassed()) { 
+      dinnerCount++; 
+      if (dinnerVal) dinnerVal.textContent = dinnerCount; 
+      updateButtonStates();
+    } 
+  };
+  if (dinnerMinus) dinnerMinus.onclick = () => { 
+    if (!isDinnerCutoffPassed() && dinnerCount > 0) { 
+      dinnerCount--; 
+      if (dinnerVal) dinnerVal.textContent = dinnerCount; 
+      updateButtonStates();
+    } 
+  };
 
   if (saveBtn) {
     saveBtn.onclick = () => {
@@ -189,9 +220,10 @@ if (welcomeName) {
         submitted: true
       })
         .then(() => {
+          hasSubmittedBefore = true;
           if (saveMsg) {
             saveMsg.style.color = "#16a34a";
-            saveMsg.textContent = "Saved successfully!";
+            saveMsg.textContent = "Meal saved successfully!";
             setTimeout(() => updateButtonStates(), 2000);
           }
         })
@@ -213,6 +245,8 @@ if (welcomeName) {
     if (data[currentUser.name]) {
       lunchCount = data[currentUser.name].lunch || 0;
       dinnerCount = data[currentUser.name].dinner || 0;
+      hasSubmittedBefore = data[currentUser.name].submitted || false;
+
       if (lunchVal) lunchVal.textContent = lunchCount;
       if (dinnerVal) dinnerVal.textContent = dinnerCount;
     }
@@ -294,7 +328,7 @@ if (bazarForm) {
     }
   }
 
-  // Admin Direct Real-Time Edit Function (No time limit for Admin)
+  // Admin Direct Real-Time Edit Function
   window.updateMemberMeal = (memberName, mealType, change) => {
     const memberRef = ref(db, `meals/${todayStr}/${memberName}`);
     get(memberRef).then((snapshot) => {
