@@ -57,7 +57,25 @@
       </div>
       <p id="save-msg" class="status-msg"></p>
     </div>
-<!-- Monthly Overview & Due Status Card -->
+
+    <!-- Live Board -->
+    <div class="card">
+      <h3>📋 Today's Live Board</h3>
+      <table class="meal-table">
+        <thead>
+          <tr>
+            <th>Member</th>
+            <th>Lunch</th>
+            <th>Dinner</th>
+          </tr>
+        </thead>
+        <tbody id="board-body">
+          <tr><td colspan="3">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Monthly Overview & Due Status Card -->
     <div class="card" style="background: #f8fafc; border: 1px solid #cbd5e1;">
       <h3 style="margin-bottom: 12px;">📊 Monthly Overview & Due Status</h3>
       
@@ -100,6 +118,7 @@
         </div>
       </div>
     </div>
+
     <!-- Deposit Entry Card -->
     <div class="card">
       <h3>💵 Request Deposit Entry</h3>
@@ -141,23 +160,6 @@
       <ul id="member-pending-list" style="list-style: none; padding: 0; margin: 0; font-size: 0.85rem;">
         <li style="color: #64748b;">Loading pending requests...</li>
       </ul>
-    </div>
-
-<!-- Live Board -->
-    <div class="card">
-      <h3>📋 Today's Live Board</h3>
-      <table class="meal-table">
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th>Lunch</th>
-            <th>Dinner</th>
-          </tr>
-        </thead>
-        <tbody id="board-body">
-          <tr><td colspan="3">Loading...</td></tr>
-        </tbody>
-      </table>
     </div>
 
     <!-- Change PIN -->
