@@ -11,32 +11,17 @@
     
     <header class="top-header">
       <h2 id="welcome-name">Hi, Member! 👋</h2>
+      <a href="history.html" class="nav-link">📜 History</a>
       <button id="logout-btn" class="btn-logout">Logout</button>
     </header>
 
-    <!-- Phase 6: Member Cooking Summary -->
-    <div class="card summary-card">
-      <h3>🍛 Today's Cooking Summary</h3>
-      <div class="summary-grid">
-        <div class="summary-box">
-          <span class="label">Lunch</span>
-          <span id="total-lunch" class="count">0</span>
-        </div>
-        <div class="summary-box">
-          <span class="label">Dinner</span>
-          <span id="total-dinner" class="count">0</span>
-        </div>
-        <div class="summary-box total-box">
-          <span class="label">Total</span>
-          <span id="total-day" class="count">0</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Phase 4: Today's Meal Entry -->
+    <!-- Member Meal Entry -->
     <div class="card">
-      <h3>📅 Today: <span id="current-date">--</span></h3>
-      
+      <h3>🍽️ Your Today's Meal (<span id="current-date">--</span>)</h3>
+      <p style="font-size: 0.8rem; color: #64748b; margin-bottom: 12px;">
+        ⏰ Cutoffs: Lunch before 12:00 PM | Dinner before 8:00 PM
+      </p>
+
       <div class="meal-input-group">
         <div class="meal-row">
           <span>Lunch Meal:</span>
@@ -61,9 +46,9 @@
       <p id="save-msg" class="status-msg"></p>
     </div>
 
-    <!-- Phase 5: Live Real-Time Board -->
+    <!-- Live Board for Members -->
     <div class="card">
-      <h3>📋 Today's Meal Board</h3>
+      <h3>📋 Today's Live Board</h3>
       <table class="meal-table">
         <thead>
           <tr>
@@ -73,17 +58,16 @@
           </tr>
         </thead>
         <tbody id="board-body">
-          <tr><td colspan="3">Loading board...</td></tr>
+          <tr><td colspan="3">Loading...</td></tr>
         </tbody>
       </table>
     </div>
 
-    <!-- Security: Update PIN -->
+    <!-- Change PIN -->
     <div class="card">
-      <h3>🔑 Security Settings</h3>
+      <h3>🔑 Change Your PIN</h3>
       <div class="form-group">
-        <label for="new-pin-input">Change PIN</label>
-        <input type="password" id="new-pin-input" placeholder="Enter new PIN" maxLength="6" />
+        <input type="password" id="new-pin-input" placeholder="New PIN (min 4 digits)">
       </div>
       <button id="update-pin-btn" class="btn btn-secondary">Update PIN</button>
       <p id="pin-msg" class="status-msg"></p>
