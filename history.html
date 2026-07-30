@@ -5,24 +5,59 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Daily History - Home Mess Manager V2</title>
   <link rel="stylesheet" href="style.css">
+  <style>
+    .history-card {
+      background: #ffffff;
+      padding: 16px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+      margin-bottom: 16px;
+    }
+    .date-select-box {
+      width: 100%;
+      padding: 10px;
+      font-size: 1rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      background: #f8fafc;
+      outline: none;
+    }
+    .back-btn {
+      color: #2563eb;
+      text-decoration: none;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .back-btn:hover {
+      text-decoration: underline;
+    }
+  </style>
 </head>
 <body>
   <div class="dashboard-container">
     
-    <header class="top-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+    <!-- Top Header -->
+    <header class="top-header" style="display: flex; justify-content: space-between; align-items: center;">
       <h2>📜 Daily History</h2>
-      <a id="back-btn" href="#" class="nav-link">← Back</a>
+      <a href="#" id="back-btn" class="back-btn">← Back</a>
     </header>
 
-    <!-- Date Picker Card -->
-    <div class="card">
-      <label for="history-date" style="font-weight: 600; display: block; margin-bottom: 8px;">Select Date:</label>
-      <input type="date" id="history-date" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 1rem;">
+    <!-- Select Date Card -->
+    <div class="history-card">
+      <label for="history-date-select" style="font-weight: 600; display: block; margin-bottom: 8px; color: #334155;">
+        Select Date:
+      </label>
+      <select id="history-date-select" class="date-select-box">
+        <option value="">Loading dates...</option>
+      </select>
     </div>
 
-    <!-- History Table Card -->
-    <div class="card">
-      <h3>Meals on <span id="selected-history-date">--</span></h3>
+    <!-- History Data Board -->
+    <div class="history-card">
+      <h3 style="margin-bottom: 12px; color: #1e293b;">
+        Meals on <span id="selected-date-label" style="color: #2563eb;">--</span>
+      </h3>
+
       <table class="meal-table">
         <thead>
           <tr>
@@ -33,9 +68,19 @@
           </tr>
         </thead>
         <tbody id="history-board-body">
-          <tr><td colspan="4">Loading...</td></tr>
+          <tr>
+            <td colspan="4" style="text-align: center; color: #64748b;">Loading history...</td>
+          </tr>
         </tbody>
       </table>
+    </div>
+
+    <!-- History Bazar Expense Card -->
+    <div class="history-card">
+      <h3 style="margin-bottom: 10px; color: #1e293b;">🛒 Bazar Expenses on Date</h3>
+      <ul id="history-bazar-list" style="list-style: none; padding: 0; margin: 0; font-size: 0.9rem; color: #475569;">
+        <li>Loading expenses...</li>
+      </ul>
     </div>
 
   </div>
