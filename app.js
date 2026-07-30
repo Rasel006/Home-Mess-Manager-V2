@@ -1,4 +1,4 @@
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+Import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getDatabase, ref, set, get, push, remove, onValue } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js";
 
 // FIREBASE CONFIGURATION
@@ -476,7 +476,6 @@ if (bazarForm) {
     approvalList.innerHTML = html;
   });
 
-  // Global functions for Admin Approval Actions
   window.approveRequest = async (key) => {
     const snap = await get(ref(db, `pending_requests/${key}`));
     if (!snap.exists()) return;
@@ -762,7 +761,6 @@ if (bazarForm) {
   }
   loadMonthlyData(currentMonthStr);
 
-  // Update Admin PIN Handler
   const updateAdminPinBtn = document.getElementById("update-admin-pin-btn");
   if (updateAdminPinBtn) {
     updateAdminPinBtn.onclick = () => {
@@ -803,94 +801,102 @@ if (bazarForm) {
 // ------------------------------------
 const historyDateSelect = document.getElementById("history-date-select");
 if (historyDateSelect) {
-  const mealDateTitle = document.getElementById("meal-date-title");
-  const historyMealBoard = document.getElementById("history-meal-board");
-  const historyBazarContainer = document.getElementById("history-bazar-container");
+  const backBtn = document.getElementById("back-btn");
+  const selectedDateLabel = document.getElementById("selected-date-label");
+  const historyBoardBody = document.getElementById("history-board-body");
+  const historyBazarList = document.getElementById("history-bazar-list");
 
-  // Load all available dates from meals and bazar
-  async function loadHistoryDates() {
-    const datesSet = new Set();
+  // Handle Back Button Action
+  if (backBtn) {
+    backBtn.onclick = (e) => {
+      e.preventDefault();
+      const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+      if (currentUser && currentUser.role === "admin") {
+        window.location.href = "admin.html";
+      } else {
+        window.location.href = "member.html";
+      }
+    };
+  }
 
-    const mealsSnap = await get(ref(db, "meals"));
-    if (mealsSnap.exists()) {
-      Object.keys(mealsSnap.val()).forEach(dateStr => datesSet.add(dateStr));
+  // Load and Render History Details for a Given Date
+  async function loadHistoryForDate(targetDate) {
+    if (!targetDate) {
+      if (selectedDateLabel) selectedDateLabel.textContent = "--";
+      if (historyBoardBody) historyBoardBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #64748b;">Please select a date.</td></tr>`;
+      if (historyBazarList) historyBazarList.innerHTML = `<li>No date selected.</li>`;
+      return;
     }
 
+    if (selectedDateLabel) selectedDateLabel.textContent = targetDate;
+
+    // Fetch Meals Data
+    const mealsSnap = await get(ref(db, `meals/${targetDate}`));
+    const mealsData = mealsSnap.exists() ? mealsSnap.val() : {};
+
+    let tableHtml = "";
+    MEMBERS_LIST.forEach((name) => {
+      const m = mealsData[name] || { lunch: 0, dinner: 0 };
+      const total = (m.lunch || 0) + (m.dinner || 0);
+      tableHtml += `<tr>
+        <td><strong>${name}</strong> ${name === 'Rizu' ? '(Admin)' : ''}</td>
+        <td>${m.lunch || 0}</td>
+        <td>${m.dinner || 0}</td>
+        <td><strong>${total}</strong></td>
+      </tr>`;
+    });
+    if (historyBoardBody) historyBoardBody.innerHTML = tableHtml;
+
+    // Fetch Bazar Data
+    const bazarSnap = await get(ref(db, `bazar/${targetDate}`));
+    if (bazarSnap.exists()) {
+      const bazarData = bazarSnap.val();
+      let bazarHtml = "";
+      Object.values(bazarData).forEach(b => {
+        bazarHtml += `<li style="padding: 4px 0; border-bottom: 1px dashed #e2e8f0;">
+          🛒 <strong>${b.item}</strong> - ৳${b.amount} ${b.addedBy ? `(by ${b.addedBy})` : ''}
+        </li>`;
+      });
+      if (historyBazarList) historyBazarList.innerHTML = bazarHtml;
+    } else {
+      if (historyBazarList) historyBazarList.innerHTML = `<li style="color: #64748b;">No bazar expenses logged for this date.</li>`;
+    }
+  }
+
+  // Populate Dates Dropdown dynamically from database
+  async function populateAvailableDates() {
+    const datesSet = new Set();
+    
+    // Add today date
+    const today = getTodayDateStr();
+    datesSet.add(today);
+
+    // Get dates from meals
+    const mealsSnap = await get(ref(db, "meals"));
+    if (mealsSnap.exists()) {
+      Object.keys(mealsSnap.val()).forEach(d => datesSet.add(d));
+    }
+
+    // Get dates from bazar
     const bazarSnap = await get(ref(db, "bazar"));
     if (bazarSnap.exists()) {
-      Object.keys(bazarSnap.val()).forEach(dateStr => datesSet.add(dateStr));
+      Object.keys(bazarSnap.val()).forEach(d => datesSet.add(d));
     }
 
     const sortedDates = Array.from(datesSet).sort().reverse();
 
-    if (sortedDates.length === 0) {
-      historyDateSelect.innerHTML = `<option value="">No history available</option>`;
-      return;
-    }
-
     let optionsHtml = "";
-    sortedDates.forEach(dateStr => {
-      optionsHtml += `<option value="${dateStr}">${dateStr}</option>`;
+    sortedDates.forEach(d => {
+      optionsHtml += `<option value="${d}">${d} ${d === today ? '(Today)' : ''}</option>`;
     });
+
     historyDateSelect.innerHTML = optionsHtml;
-
-    // Load history for the latest date by default
-    loadDataForDate(sortedDates[0]);
-  }
-
-  async function loadDataForDate(dateStr) {
-    if (mealDateTitle) mealDateTitle.textContent = `Meals on ${dateStr}`;
-
-    // 1. Load Meals for date
-    const mealsSnap = await get(ref(db, `meals/${dateStr}`));
-    const mealsData = mealsSnap.exists() ? mealsSnap.val() : {};
-    let mealRowsHtml = "";
-
-    MEMBERS_LIST.forEach(name => {
-      const meal = mealsData[name] || { lunch: 0, dinner: 0 };
-      const total = (meal.lunch || 0) + (meal.dinner || 0);
-      mealRowsHtml += `<tr>
-        <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
-        <td>${meal.lunch}</td>
-        <td>${meal.dinner}</td>
-        <td><strong>${total}</strong></td>
-      </tr>`;
-    });
-    if (historyMealBoard) historyMealBoard.innerHTML = mealRowsHtml;
-
-    // 2. Load Bazar Expenses for date
-    const bazarSnap = await get(ref(db, `bazar/${dateStr}`));
-    if (!bazarSnap.exists()) {
-      if (historyBazarContainer) {
-        historyBazarContainer.innerHTML = `<p style="color: #64748b; font-size: 0.9rem;">No bazar expenses recorded on this date.</p>`;
-      }
-      return;
-    }
-
-    const bazarData = bazarSnap.val();
-    let bazarHtml = `<ul style="list-style: none; padding: 0; margin: 0;">`;
-    let totalBazarAmount = 0;
-
-    Object.values(bazarData).forEach(item => {
-      totalBazarAmount += (item.amount || 0);
-      bazarHtml += `<li style="display: flex; justify-content: space-between; padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.9rem;">
-        <span>🛒 ${item.item} ${item.addedBy ? `(by ${item.addedBy})` : ''}</span>
-        <strong>৳${item.amount}</strong>
-      </li>`;
-    });
-
-    bazarHtml += `</ul>
-      <div style="display: flex; justify-content: space-between; margin-top: 8px; font-weight: bold; font-size: 0.95rem; color: #1e293b;">
-        <span>Total Bazar:</span>
-        <span>৳${totalBazarAmount}</span>
-      </div>`;
-
-    if (historyBazarContainer) historyBazarContainer.innerHTML = bazarHtml;
+    loadHistoryForDate(sortedDates[0]);
   }
 
   historyDateSelect.addEventListener("change", (e) => {
-    loadDataForDate(e.target.value);
+    loadHistoryForDate(e.target.value);
   });
 
-  loadHistoryDates();
+  populateAvailableDates();
 }
