@@ -230,3 +230,27 @@ input, select {
   color: #ffffff;
   border-color: #2563eb;
 }
+
+.action-btn-group {
+  display: flex;
+  gap: 6px;
+  margin-top: 6px;
+}
+.btn-approve {
+  background: #16a34a;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+.btn-reject {
+  background: #dc2626;
+  color: white;
+  border: none;
+  padding: 4px 10px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 0.8rem;
+}
