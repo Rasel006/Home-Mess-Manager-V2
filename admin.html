@@ -7,8 +7,7 @@
   <link rel="stylesheet" href="style.css">
   <style>
     :root {
-      --primary: #4f46e5;
-      --primary-hover: #4338ca;
+      --primary: #2563eb;
       --bg-main: #f8fafc;
       --card-bg: #ffffff;
       --text-main: #0f172a;
@@ -20,6 +19,8 @@
       background-color: var(--bg-main);
       color: var(--text-main);
       font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+      margin: 0;
+      padding: 0;
     }
 
     .container {
@@ -28,15 +29,14 @@
       padding: 16px 12px;
     }
 
-    /* Modern Card UI */
+    /* Modern Card Container UI */
     .card {
       background: var(--card-bg);
       border-radius: 16px;
-      padding: 18px;
+      padding: 16px;
       margin-bottom: 16px;
-      box-shadow: 0 4px 20px -2px rgba(0, 0, 0, 0.05), 0 2px 6px -1px rgba(0, 0, 0, 0.02);
-      border: 1px solid rgba(226, 232, 240, 0.8);
-      transition: transform 0.2s ease;
+      box-shadow: 0 4px 16px -2px rgba(0, 0, 0, 0.04);
+      border: 1px solid var(--border-color);
     }
 
     .card h3 {
@@ -44,7 +44,6 @@
       margin-bottom: 14px;
       font-size: 1.05rem;
       font-weight: 700;
-      letter-spacing: -0.01em;
       display: flex;
       align-items: center;
       gap: 8px;
@@ -56,16 +55,11 @@
       display: flex; 
       justify-content: space-between; 
       align-items: center; 
-      margin-bottom: 20px; 
-      padding: 0 4px;
+      margin-bottom: 16px; 
     }
-    .admin-actions { 
-      display: flex; 
-      align-items: center; 
-      gap: 8px; 
-    }
+    .admin-actions { display: flex; align-items: center; gap: 8px; }
 
-    /* Buttons & Inputs Polish */
+    /* Inputs & Selects */
     input[type="text"],
     input[type="number"],
     input[type="date"],
@@ -74,13 +68,11 @@
     select,
     textarea {
       width: 100%;
-      padding: 12px 14px;
-      border: 1.5px solid var(--border-color);
+      padding: 10px 12px;
+      border: 1px solid var(--border-color);
       border-radius: 10px;
       font-size: 0.95rem;
       background-color: #f8fafc;
-      color: var(--text-main);
-      transition: all 0.2s ease;
       box-sizing: border-box;
     }
 
@@ -88,17 +80,10 @@
       outline: none;
       border-color: var(--primary);
       background-color: #fff;
-      box-shadow: 0 0 0 4px rgba(79, 70, 229, 0.1);
     }
 
-    /* Form Layout Fix */
-    form {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    form { display: flex; flex-direction: column; gap: 10px; }
 
-    /* Action Buttons */
     button[type="submit"], #save-meal-btn, #copy-summary-btn, #update-admin-pin-btn {
       width: 100%;
       padding: 12px;
@@ -107,12 +92,6 @@
       font-weight: 600;
       font-size: 0.95rem;
       cursor: pointer;
-      transition: filter 0.2s, transform 0.1s;
-      box-shadow: 0 2px 4px rgba(0,0,0,0.05);
-    }
-
-    button:active {
-      transform: scale(0.98);
     }
 
     /* Meal Control Row Styling */
@@ -120,69 +99,76 @@
       display: flex; 
       justify-content: space-between; 
       align-items: center; 
-      padding: 10px 0; 
+      padding: 8px 0; 
       border-bottom: 1px dashed var(--border-color); 
     }
-    .meal-counter-group { 
-      display: flex; 
-      align-items: center; 
-      gap: 10px; 
-    }
+    .meal-counter-group { display: flex; align-items: center; gap: 8px; }
     .meal-counter-group button { 
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f1f5f9; 
-      font-weight: bold; 
-      border-radius: 8px; 
-      cursor: pointer; 
-      border: 1px solid var(--border-color); 
-      color: var(--text-main);
-    }
-    .meal-counter-group button:hover {
-      background: #e2e8f0;
+      width: 30px; height: 30px; 
+      background: #f1f5f9; font-weight: bold; border-radius: 6px; 
+      border: 1px solid var(--border-color); cursor: pointer;
     }
 
-    /* Table Enhancements */
+    /* 3rd Image Grid Stats Box Styling */
+    .stats-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+
+    .stats-grid-2 {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 8px;
+      margin-bottom: 8px;
+    }
+
+    .stat-box {
+      background: #ffffff;
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 10px 8px;
+      text-align: center;
+    }
+
+    .stat-box .title {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    .stat-box .value {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    /* Modern Responsive Cards Table */
     .table-responsive { 
       width: 100%; 
       overflow-x: auto; 
       -webkit-overflow-scrolling: touch; 
-      border-radius: 8px;
-      border: 1px solid var(--border-color);
     }
+    
     table {
       width: 100%;
       border-collapse: collapse;
       font-size: 0.88rem;
-      white-space: nowrap;
     }
+
     th, td {
-      padding: 10px 8px;
+      padding: 10px 6px;
       text-align: center;
       border-bottom: 1px solid var(--border-color);
     }
+
     th {
-      background-color: #f1f5f9;
-      color: #334155;
+      background-color: #f8fafc;
+      color: var(--text-muted);
       font-weight: 600;
       font-size: 0.82rem;
-      text-transform: uppercase;
-      letter-spacing: 0.03em;
-    }
-    tr:last-child td {
-      border-bottom: none;
-    }
-
-    /* Badges & Alerts */
-    .badge {
-      background: #ef4444;
-      color: white;
-      border-radius: 50px;
-      padding: 2px 6px;
-      font-size: 0.75rem;
     }
   </style>
 </head>
@@ -191,25 +177,25 @@
   <div class="container">
     <!-- Header -->
     <div class="admin-header">
-      <h2 style="margin: 0; font-size: 1.25rem; font-weight: 800; display: flex; align-items: center; gap: 6px;">⚙️ Admin Control</h2>
+      <h2 style="margin: 0; font-size: 1.25rem;">⚙️ Admin Control</h2>
       <div class="admin-actions">
         <!-- Notification Bell -->
         <div style="position: relative;">
-          <button id="bell-icon-btn" style="background: #fff; border: 1.5px solid var(--border-color); padding: 8px 12px; border-radius: 10px; font-size: 1rem; cursor: pointer; box-shadow: 0 1px 2px rgba(0,0,0,0.02);">🔔<span id="notif-badge" class="badge" style="display:none;">0</span></button>
-          <div id="notif-dropdown" style="display: none; position: absolute; right: 0; top: 44px; width: 250px; background: #fff; border: 1.5px solid var(--border-color); border-radius: 12px; box-shadow: 0 10px 25px -5px rgba(0,0,0,0.1); padding: 12px; z-index: 1000; text-align: left;">
-            <h4 style="margin: 0 0 8px 0; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 6px; color: var(--text-muted);">Notifications</h4>
+          <button id="bell-icon-btn" style="background: #fff; border: 1px solid var(--border-color); padding: 6px 10px; border-radius: 8px; font-size: 1rem; cursor: pointer;">🔔<span id="notif-badge" class="badge" style="display:none; background:#ef4444; color:#fff; border-radius:50%; padding:2px 6px; font-size:0.7rem;">0</span></button>
+          <div id="notif-dropdown" style="display: none; position: absolute; right: 0; top: 40px; width: 240px; background: #fff; border: 1px solid var(--border-color); border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); padding: 10px; z-index: 1000;">
+            <h4 style="margin: 0 0 6px 0; font-size: 0.85rem; border-bottom: 1px solid var(--border-color); padding-bottom: 4px; color: var(--text-muted);">Notifications</h4>
             <div id="notification-list" style="max-height: 180px; overflow-y: auto;">
               <small style="color: var(--text-muted);">Loading...</small>
             </div>
           </div>
         </div>
-        <a href="history.html" style="text-decoration: none; padding: 8px 12px; background: #f1f5f9; color: #334155; border: 1.5px solid var(--border-color); border-radius: 10px; font-size: 0.85rem; font-weight: 600;">📜 History</a>
-        <button id="logout-btn" style="padding: 8px 12px; background: #fee2e2; color: #dc2626; border: none; border-radius: 10px; font-size: 0.85rem; cursor: pointer; font-weight: 600;">Logout</button>
+        <a href="history.html" style="text-decoration: none; padding: 6px 10px; background: #f1f5f9; color: #334155; border: 1px solid var(--border-color); border-radius: 8px; font-size: 0.85rem; font-weight: 500;">📜 History</a>
+        <button id="logout-btn" style="padding: 6px 10px; background: #ef4444; color: #fff; border: none; border-radius: 8px; font-size: 0.85rem; cursor: pointer; font-weight: 500;">Logout</button>
       </div>
     </div>
 
     <!-- Pending Requests Section -->
-    <div class="card" style="background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 100%); border: 1.5px solid #fcd34d;">
+    <div class="card" style="background: #fffbeb; border: 1px solid #fcd34d;">
       <h3 style="margin-top: 0; color: #b45309; font-size: 0.95rem;">
         🔔 Pending Approvals (<span id="pending-count">0</span>)
       </h3>
@@ -220,13 +206,13 @@
 
     <!-- Admin Meal Control -->
     <div class="card">
-      <h3>🍽️ Admin Meal Control <span style="font-size: 0.8rem; font-weight: normal; color: var(--text-muted);" id="current-date">Loading...</span></h3>
+      <h3>🍽️ Admin Meal Control (<span id="current-date">Loading...</span>)</h3>
       <div style="display: flex; flex-direction: column; gap: 4px;">
         <div class="meal-control-row">
           <span style="font-weight: 500; font-size: 0.95rem;">Lunch Meal:</span>
           <div class="meal-counter-group">
             <button id="lunch-minus">-</button>
-            <span id="lunch-val" style="font-size: 1.05rem; font-weight: bold; min-width: 24px; text-align: center;">0</span>
+            <span id="lunch-val" style="font-size: 1.05rem; font-weight: bold; min-width: 20px; text-align: center;">0</span>
             <button id="lunch-plus">+</button>
           </div>
         </div>
@@ -234,11 +220,11 @@
           <span style="font-weight: 500; font-size: 0.95rem;">Dinner Meal:</span>
           <div class="meal-counter-group">
             <button id="dinner-minus">-</button>
-            <span id="dinner-val" style="font-size: 1.05rem; font-weight: bold; min-width: 24px; text-align: center;">0</span>
+            <span id="dinner-val" style="font-size: 1.05rem; font-weight: bold; min-width: 20px; text-align: center;">0</span>
             <button id="dinner-plus">+</button>
           </div>
         </div>
-        <button id="save-meal-btn" style="background: var(--primary); color: #fff; margin-top: 8px;">Save Admin Meal</button>
+        <button id="save-meal-btn" style="background: var(--primary); color: #fff; margin-top: 6px;">Save Admin Meal</button>
       </div>
     </div>
 
@@ -249,7 +235,7 @@
         <table>
           <thead>
             <tr>
-              <th style="text-align: left; padding-left: 10px;">Member</th>
+              <th style="text-align: left; padding-left: 6px;">Member</th>
               <th>Lunch</th>
               <th>Dinner</th>
               <th>Action</th>
@@ -260,7 +246,7 @@
           </tbody>
           <tfoot>
             <tr style="font-weight: bold; background: #f8fafc;">
-              <td style="text-align: left; padding-left: 10px;">Total</td>
+              <td style="text-align: left; padding-left: 6px;">Total</td>
               <td id="total-lunch">0</td>
               <td id="total-dinner">0</td>
               <td id="total-day" style="color: var(--primary);">0</td>
@@ -282,12 +268,12 @@
 
     <!-- Add Bazar Expense -->
     <div class="card">
-      <h3>🛒 Direct Bazar Entry</h3>
+      <h3>🛒 Add Bazar Expense</h3>
       <form id="bazar-form">
-        <input type="text" id="bazar-item" placeholder="Bazar Item Details" required>
+        <input type="text" id="bazar-item" placeholder="Bazar Item / Details" required>
         <input type="number" id="bazar-amount" placeholder="Amount (Tk)" required>
         <input type="date" id="bazar-date" required>
-        <button type="submit" style="background: #10b981; color: #fff;">Save Bazar Expense</button>
+        <button type="submit" style="background: #16a34a; color: #fff;">Save Bazar</button>
       </form>
     </div>
 
@@ -296,7 +282,7 @@
       <h3>💵 Direct Deposit Entry</h3>
       <form id="admin-deposit-form">
         <select id="admin-deposit-user" required>
-          <option value="">Select Member</option>
+          <option value="">-- Choose Member --</option>
           <option value="Rizu">Rizu</option>
           <option value="Jim">Jim</option>
           <option value="Maruf">Maruf</option>
@@ -306,27 +292,85 @@
           <option value="Sourov">Sourov</option>
         </select>
         <input type="number" id="admin-deposit-amount" placeholder="Amount (Tk)" required>
-        <button type="submit" style="background: #10b981; color: #fff;">Add Deposit</button>
+        <button type="submit" style="background: #16a34a; color: #fff;">Add Deposit</button>
       </form>
+    </div>
+
+    <!-- Monthly Overview & Due Status (Admin Own) - 3rd Image Design -->
+    <div class="card">
+      <h3>📊 Monthly Overview & Due Status (Admin)</h3>
+      
+      <!-- Top 3 Stats Grid -->
+      <div class="stats-grid-3">
+        <div class="stat-box">
+          <div class="title">Total Bazar</div>
+          <div class="value" id="admin-own-total-bazar">0 Tk</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Total Meals</div>
+          <div class="value" id="admin-own-total-meals">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Meal Rate</div>
+          <div class="value" style="color: var(--primary);" id="admin-own-meal-rate">0.00 Tk</div>
+        </div>
+      </div>
+
+      <div style="border-top: 1px dashed var(--border-color); margin: 8px 0 12px 0;"></div>
+
+      <!-- Bottom 2x2 Stats Grid -->
+      <div class="stats-grid-2">
+        <div class="stat-box">
+          <div class="title">Your Total Meals</div>
+          <div class="value" id="admin-my-total-meals">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Your Total Cost</div>
+          <div class="value" style="color: #d97706;" id="admin-my-total-cost">0.00 Tk</div>
+        </div>
+      </div>
+
+      <div class="stats-grid-2">
+        <div class="stat-box">
+          <div class="title">Your Deposit</div>
+          <div class="value" style="color: #16a34a;" id="admin-my-deposit">0 Tk</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Balance Status</div>
+          <div class="value" style="color: #16a34a; font-size: 0.85rem;" id="admin-my-balance-status">0.00 Tk</div>
+        </div>
+      </div>
     </div>
 
     <!-- Monthly Settlement Overview -->
     <div class="card">
-      <h3>📊 Monthly Settlement Overview</h3>
+      <h3>📊 Monthly Settlement</h3>
       <div style="margin-bottom: 12px;">
-        <label for="month-select" style="font-weight: 600; font-size: 0.82rem; color: var(--text-muted); display: block; margin-bottom: 4px;">Select Month:</label>
-        <input type="month" id="month-select">
+        <label for="month-select" style="font-weight: 500; font-size: 0.85rem; color: var(--text-muted);">Select Month:</label>
+        <input type="month" id="month-select" style="margin-top: 4px;">
       </div>
-      <div style="background: #f8fafc; padding: 12px; border-radius: 10px; margin-bottom: 12px; font-size: 0.88rem; border: 1.5px solid var(--border-color); display: flex; flex-direction: column; gap: 4px;">
-        <p style="margin: 0;">Total Mess Meals: <strong id="monthly-total-meals">0</strong></p>
-        <p style="margin: 0;">Total Mess Bazar: <strong id="monthly-total-bazar">0 Tk</strong></p>
-        <p style="margin: 0;">Current Meal Rate: <strong id="calculated-meal-rate" style="color: var(--primary);">0.00 Tk</strong></p>
+
+      <!-- Overview Card Boxes (Image 3 Grid layout) -->
+      <div class="stats-grid-3">
+        <div class="stat-box">
+          <div class="title">Total Meals</div>
+          <div class="value" id="monthly-total-meals">0</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Total Bazar</div>
+          <div class="value" id="monthly-total-bazar">0 Tk</div>
+        </div>
+        <div class="stat-box">
+          <div class="title">Meal Rate</div>
+          <div class="value" style="color: var(--primary);" id="calculated-meal-rate">0.00 Tk</div>
+        </div>
       </div>
-      <div class="table-responsive">
+
+      <div class="table-responsive" style="margin-top: 10px;">
         <table>
           <thead>
             <tr>
-              <th style="text-align: left; padding-left: 10px;">Member</th>
+              <th style="text-align: left; padding-left: 6px;">Member</th>
               <th>Meals</th>
               <th>Deposit</th>
               <th>Cost</th>
@@ -338,17 +382,17 @@
           </tbody>
         </table>
       </div>
-      <button id="copy-summary-btn" style="background: var(--primary); color: #fff; margin-top: 14px;">📋 Copy Summary for Messenger</button>
+      <button id="copy-summary-btn" style="background: #4f46e5; color: #fff; margin-top: 12px;">📋 Copy Summary for Messenger</button>
     </div>
 
     <!-- Admin PIN Settings -->
     <div class="card">
       <h3>🔒 Change Admin PIN</h3>
-      <form id="admin-pin-form" onsubmit="return false;" style="display: flex; flex-direction: column; gap: 8px;">
-        <input type="password" id="new-admin-pin-input" placeholder="New PIN (min 4 chars)">
+      <div style="display: flex; flex-direction: column; gap: 8px;">
+        <input type="password" id="new-admin-pin-input" placeholder="Enter new PIN">
         <button id="update-admin-pin-btn" style="background: #475569; color: #fff;">Update PIN</button>
-        <small id="admin-pin-msg" style="font-weight: 500; text-align: center;"></small>
-      </form>
+        <small id="admin-pin-msg" style="font-weight: 500;"></small>
+      </div>
     </div>
 
   </div>
