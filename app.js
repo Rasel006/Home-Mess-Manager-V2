@@ -496,51 +496,26 @@ if (bazarForm) {
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
 
-  // Admin Meal Control State
-  let adminLunch = 0;
-  let adminDinner = 0;
-  const lunchVal = document.getElementById("lunch-val");
-  const dinnerVal = document.getElementById("dinner-val");
-  const lunchPlus = document.getElementById("lunch-plus");
-  const lunchMinus = document.getElementById("lunch-minus");
-  const dinnerPlus = document.getElementById("dinner-plus");
-  const dinnerMinus = document.getElementById("dinner-minus");
-  const saveMealBtn = document.getElementById("save-meal-btn");
-  const saveMsg = document.getElementById("save-msg");
+  // Live Board & Instant Edit Handler (Direct +/- buttons in table)
+  window.changeMeal = async (name, type, delta) => {
+    const mealSnap = await get(ref(db, `meals/${todayStr}/${name}`));
+    let currentData = mealSnap.exists() ? mealSnap.val() : { lunch: 0, dinner: 0, submitted: true };
+    
+    if (type === 'lunch') {
+      currentData.lunch = Math.max(0, (currentData.lunch || 0) + delta);
+    } else if (type === 'dinner') {
+      currentData.dinner = Math.max(0, (currentData.dinner || 0) + delta);
+    }
+    currentData.submitted = true;
 
-  if (lunchPlus) lunchPlus.onclick = () => { adminLunch++; if (lunchVal) lunchVal.textContent = adminLunch; };
-  if (lunchMinus) lunchMinus.onclick = () => { if (adminLunch > 0) adminLunch--; if (lunchVal) lunchVal.textContent = adminLunch; };
-  if (dinnerPlus) dinnerPlus.onclick = () => { adminDinner++; if (dinnerVal) dinnerVal.textContent = adminDinner; };
-  if (dinnerMinus) dinnerMinus.onclick = () => { if (adminDinner > 0) adminDinner--; if (dinnerVal) dinnerVal.textContent = adminDinner; };
+    await set(ref(db, `meals/${todayStr}/${name}`), currentData);
+  };
 
-  if (saveMealBtn) {
-    saveMealBtn.onclick = () => {
-      set(ref(db, `meals/${todayStr}/Rizu`), {
-        lunch: adminLunch,
-        dinner: adminDinner,
-        submitted: true
-      }).then(() => {
-        if (saveMsg) {
-          saveMsg.style.color = "#16a34a";
-          saveMsg.textContent = "Admin meal saved successfully!";
-          setTimeout(() => saveMsg.textContent = "", 2500);
-        }
-      });
-    };
-  }
-
-  // Load Admin meal data for today & Live Board
+  // Load Live Board with +/- buttons for Admin
   onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
     const data = snapshot.val() || {};
     const boardBody = document.getElementById("board-body");
     let totalLunch = 0, totalDinner = 0, rowsHtml = "";
-
-    if (data["Rizu"]) {
-      adminLunch = data["Rizu"].lunch || 0;
-      adminDinner = data["Rizu"].dinner || 0;
-      if (lunchVal) lunchVal.textContent = adminLunch;
-      if (dinnerVal) dinnerVal.textContent = adminDinner;
-    }
 
     MEMBERS_LIST.forEach((name) => {
       const meal = data[name] || { lunch: 0, dinner: 0 };
@@ -549,11 +524,21 @@ if (bazarForm) {
 
       rowsHtml += `<tr>
         <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
-        <td>${meal.lunch}</td>
-        <td>${meal.dinner}</td>
         <td>
-          <button onclick="instantEditMeal('${name}', ${meal.lunch}, ${meal.dinner})" class="btn-approve" style="padding: 2px 6px; font-size: 0.75rem;">Edit</button>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <button onclick="changeMeal('${name}', 'lunch', -1)" style="padding: 2px 6px; cursor: pointer;">-</button>
+            <span style="min-width: 15px; text-align: center;">${meal.lunch}</span>
+            <button onclick="changeMeal('${name}', 'lunch', 1)" style="padding: 2px 6px; cursor: pointer;">+</button>
+          </div>
         </td>
+        <td>
+          <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+            <button onclick="changeMeal('${name}', 'dinner', -1)" style="padding: 2px 6px; cursor: pointer;">-</button>
+            <span style="min-width: 15px; text-align: center;">${meal.dinner}</span>
+            <button onclick="changeMeal('${name}', 'dinner', 1)" style="padding: 2px 6px; cursor: pointer;">+</button>
+          </div>
+        </td>
+        <td><span style="color: #16a34a; font-size: 0.8rem; font-weight: bold;">⚡ Live Edit</span></td>
       </tr>`;
     });
 
@@ -567,21 +552,6 @@ if (bazarForm) {
     if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
     if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
   });
-
-  window.instantEditMeal = (name, currentLunch, currentDinner) => {
-    const newLunch = prompt(`Enter new Lunch for ${name}:`, currentLunch);
-    if (newLunch === null) return;
-    const newDinner = prompt(`Enter new Dinner for ${name}:`, currentDinner);
-    if (newDinner === null) return;
-
-    set(ref(db, `meals/${todayStr}/${name}`), {
-      lunch: Number(newLunch),
-      dinner: Number(newDinner),
-      submitted: true
-    }).then(() => {
-      alert(`Updated meals for ${name}!`);
-    });
-  };
 
   // Pending Requests Listener
   onValue(ref(db, "pending_requests"), (snapshot) => {
