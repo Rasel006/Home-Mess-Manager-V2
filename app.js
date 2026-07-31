@@ -489,14 +489,101 @@ if (bazarForm) {
     window.location.href = "index.html";
   }
 
-  const monthSelect = document.getElementById("month-select");
-  const bazarDate = document.getElementById("bazar-date");
   const todayStr = getTodayDateStr();
+  const bazarDate = document.getElementById("bazar-date");
   if (bazarDate) bazarDate.value = todayStr;
 
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
 
+  // Admin Meal Control State
+  let adminLunch = 0;
+  let adminDinner = 0;
+  const lunchVal = document.getElementById("lunch-val");
+  const dinnerVal = document.getElementById("dinner-val");
+  const lunchPlus = document.getElementById("lunch-plus");
+  const lunchMinus = document.getElementById("lunch-minus");
+  const dinnerPlus = document.getElementById("dinner-plus");
+  const dinnerMinus = document.getElementById("dinner-minus");
+  const saveMealBtn = document.getElementById("save-meal-btn");
+  const saveMsg = document.getElementById("save-msg");
+
+  if (lunchPlus) lunchPlus.onclick = () => { adminLunch++; if (lunchVal) lunchVal.textContent = adminLunch; };
+  if (lunchMinus) lunchMinus.onclick = () => { if (adminLunch > 0) adminLunch--; if (lunchVal) lunchVal.textContent = adminLunch; };
+  if (dinnerPlus) dinnerPlus.onclick = () => { adminDinner++; if (dinnerVal) dinnerVal.textContent = adminDinner; };
+  if (dinnerMinus) dinnerMinus.onclick = () => { if (adminDinner > 0) adminDinner--; if (dinnerVal) dinnerVal.textContent = adminDinner; };
+
+  if (saveMealBtn) {
+    saveMealBtn.onclick = () => {
+      set(ref(db, `meals/${todayStr}/Rizu`), {
+        lunch: adminLunch,
+        dinner: adminDinner,
+        submitted: true
+      }).then(() => {
+        if (saveMsg) {
+          saveMsg.style.color = "#16a34a";
+          saveMsg.textContent = "Admin meal saved successfully!";
+          setTimeout(() => saveMsg.textContent = "", 2500);
+        }
+      });
+    };
+  }
+
+  // Load Admin meal data for today & Live Board
+  onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
+    const data = snapshot.val() || {};
+    const boardBody = document.getElementById("board-body");
+    let totalLunch = 0, totalDinner = 0, rowsHtml = "";
+
+    if (data["Rizu"]) {
+      adminLunch = data["Rizu"].lunch || 0;
+      adminDinner = data["Rizu"].dinner || 0;
+      if (lunchVal) lunchVal.textContent = adminLunch;
+      if (dinnerVal) dinnerVal.textContent = adminDinner;
+    }
+
+    MEMBERS_LIST.forEach((name) => {
+      const meal = data[name] || { lunch: 0, dinner: 0 };
+      totalLunch += (meal.lunch || 0);
+      totalDinner += (meal.dinner || 0);
+
+      rowsHtml += `<tr>
+        <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
+        <td>${meal.lunch}</td>
+        <td>${meal.dinner}</td>
+        <td>
+          <button onclick="instantEditMeal('${name}', ${meal.lunch}, ${meal.dinner})" class="btn-approve" style="padding: 2px 6px; font-size: 0.75rem;">Edit</button>
+        </td>
+      </tr>`;
+    });
+
+    if (boardBody) boardBody.innerHTML = rowsHtml;
+
+    const totalLunchEl = document.getElementById("total-lunch");
+    const totalDinnerEl = document.getElementById("total-dinner");
+    const totalDayEl = document.getElementById("total-day");
+
+    if (totalLunchEl) totalLunchEl.textContent = totalLunch;
+    if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
+    if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
+  });
+
+  window.instantEditMeal = (name, currentLunch, currentDinner) => {
+    const newLunch = prompt(`Enter new Lunch for ${name}:`, currentLunch);
+    if (newLunch === null) return;
+    const newDinner = prompt(`Enter new Dinner for ${name}:`, currentDinner);
+    if (newDinner === null) return;
+
+    set(ref(db, `meals/${todayStr}/${name}`), {
+      lunch: Number(newLunch),
+      dinner: Number(newDinner),
+      submitted: true
+    }).then(() => {
+      alert(`Updated meals for ${name}!`);
+    });
+  };
+
+  // Pending Requests Listener
   onValue(ref(db, "pending_requests"), (snapshot) => {
     const approvalList = document.getElementById("approval-list");
     const countEl = document.getElementById("pending-count");
@@ -545,7 +632,8 @@ if (bazarForm) {
     }
 
     await remove(ref(db, `pending_requests/${key}`));
-    if (monthSelect) loadMonthlyData(monthSelect.value);
+    const monthSelect = document.getElementById("month-select");
+    if (monthSelect && monthSelect.value) loadMonthlyData(monthSelect.value);
   };
 
   window.rejectRequest = async (key) => {
@@ -557,6 +645,7 @@ if (bazarForm) {
     await remove(ref(db, `pending_requests/${key}`));
   };
 
+  // Direct Deposit Entry
   const adminDepositForm = document.getElementById("admin-deposit-form");
   if (adminDepositForm) {
     adminDepositForm.onsubmit = async (e) => {
@@ -572,6 +661,7 @@ if (bazarForm) {
     };
   }
 
+  // Direct Bazar Entry
   bazarForm.onsubmit = async (e) => {
     e.preventDefault();
     const item = document.getElementById("bazar-item").value;
@@ -584,6 +674,121 @@ if (bazarForm) {
     bazarForm.reset();
   };
 
+  // Monthly Settlement Overview Logic
+  const monthSelect = document.getElementById("month-select");
+  const currentYearMonth = todayStr.substring(0, 7); // "YYYY-MM"
+  if (monthSelect) {
+    monthSelect.value = currentYearMonth;
+    monthSelect.onchange = (e) => loadMonthlyData(e.target.value);
+    loadMonthlyData(currentYearMonth);
+  }
+
+  async function loadMonthlyData(yearMonth) {
+    const [targetYear, targetMonth] = yearMonth.split("-").map(Number);
+    let totalMessMeals = 0;
+    let totalMessBazar = 0;
+    const memberStats = {};
+
+    MEMBERS_LIST.forEach(name => {
+      memberStats[name] = { meals: 0, deposit: 0, totalCost: 0 };
+    });
+
+    // Fetch Deposits
+    for (const name of MEMBERS_LIST) {
+      const depSnap = await get(ref(db, `deposits/${name}`));
+      if (depSnap.exists()) {
+        Object.values(depSnap.val()).forEach(d => {
+          if (d.date && d.date.startsWith(yearMonth)) {
+            memberStats[name].deposit += (d.amount || 0);
+          }
+        });
+      }
+    }
+
+    // Fetch Meals
+    const mealsSnap = await get(ref(db, "meals"));
+    if (mealsSnap.exists()) {
+      const allMeals = mealsSnap.val();
+      Object.keys(allMeals).forEach(dateStr => {
+        if (dateStr.startsWith(yearMonth)) {
+          Object.keys(allMeals[dateStr]).forEach(mem => {
+            if (memberStats[mem]) {
+              const sum = (allMeals[dateStr][mem].lunch || 0) + (allMeals[dateStr][mem].dinner || 0);
+              memberStats[mem].meals += sum;
+              totalMessMeals += sum;
+            }
+          });
+        }
+      });
+    }
+
+    // Fetch Bazar
+    const bazarSnap = await get(ref(db, "bazar"));
+    if (bazarSnap.exists()) {
+      const allBazar = bazarSnap.val();
+      Object.keys(allBazar).forEach(dateStr => {
+        if (dateStr.startsWith(yearMonth)) {
+          Object.values(allBazar[dateStr]).forEach(b => {
+            totalMessBazar += (b.amount || 0);
+          });
+        }
+      });
+    }
+
+    const mealRate = totalMessMeals > 0 ? (totalMessBazar / totalMessMeals) : 0;
+
+    document.getElementById("monthly-total-meals").textContent = totalMessMeals;
+    document.getElementById("monthly-total-bazar").textContent = `${totalMessBazar} Tk`;
+    document.getElementById("calculated-meal-rate").textContent = `${mealRate.toFixed(2)} Tk`;
+
+    let settlementHtml = "";
+    MEMBERS_LIST.forEach(name => {
+      const stats = memberStats[name];
+      stats.totalCost = stats.meals * mealRate;
+      const due = stats.totalCost - stats.deposit;
+      const statusText = due > 0 ? `<span style="color: #dc2626;">Due: ৳${due.toFixed(2)}</span>` : `<span style="color: #16a34a;">Advance: ৳${Math.abs(due).toFixed(2)}</span>`;
+
+      settlementHtml += `<tr>
+        <td>${name}</td>
+        <td>${stats.meals}</td>
+        <td>৳${stats.deposit}</td>
+        <td>৳${stats.totalCost.toFixed(2)}</td>
+        <td>${statusText}</td>
+      </tr>`;
+    });
+
+    const settlementBody = document.getElementById("settlement-board-body");
+    if (settlementBody) settlementBody.innerHTML = settlementHtml;
+
+    // Copy Summary Button for Messenger
+    const copyBtn = document.getElementById("copy-summary-btn");
+    if (copyBtn) {
+      copyBtn.onclick = () => {
+        let summaryText = `📊 *Home Mess Summary (${yearMonth})* 📊\n`;
+        summaryText = summaryText + `----------------------------------\n`;
+        summaryText = summaryText + `🛒 Total Bazar: ৳${totalMessBazar}\n`;
+        summaryText = summaryText + `🍽️ Total Meals: ${totalMessMeals}\n`;
+        summaryText = summaryText + `⭐ Meal Rate: ৳${mealRate.toFixed(2)}\n`;
+        summaryText = summaryText + `----------------------------------\n\n`;
+
+        MEMBERS_LIST.forEach(name => {
+          const st = memberStats[name];
+          const due = st.totalCost - st.deposit;
+          summaryText = summaryText + `👤 *${name}*\n`;
+          summaryText = summaryText + `- Meals: ${st.meals}\n`;
+          summaryText = summaryText + `- Deposit: ৳${st.deposit}\n`;
+          summaryText = summaryText + `- Cost: ৳${st.totalCost.toFixed(2)}\n`;
+          summaryText = summaryText + `👉 ${due > 0 ? `Due: ৳${due.toFixed(2)}` : `Advance: ৳${Math.abs(due).toFixed(2)}`}\n\n`;
+        });
+
+        navigator.clipboard.writeText(summaryText).then(() => {
+          alert("Summary copied to clipboard! You can paste it on Messenger.");
+        });
+      };
+    }
+  }
+
+  // Admin PIN Update
   const updateAdminPinBtn = document.getElementById("update-admin-pin-btn");
   if (updateAdminPinBtn) {
     updateAdminPinBtn.onclick = () => {
