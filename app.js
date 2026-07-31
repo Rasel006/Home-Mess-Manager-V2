@@ -758,9 +758,41 @@ if (bazarForm) {
 
     const mealRate = totalMessMeals > 0 ? (totalMessBazar / totalMessMeals) : 0;
 
+    // Update General Monthly Overview Display
     document.getElementById("monthly-total-meals").textContent = totalMessMeals;
     document.getElementById("monthly-total-bazar").textContent = `${totalMessBazar} Tk`;
     document.getElementById("calculated-meal-rate").textContent = `${mealRate.toFixed(2)} Tk`;
+
+    // Update Admin Own Financial Overview Display (3rd Image Design Box Sync)
+    const adminName = "Rizu"; // Admin username
+    const adminStats = memberStats[adminName] || { meals: 0, deposit: 0, totalCost: 0 };
+    adminStats.totalCost = adminStats.meals * mealRate;
+    const adminDue = adminStats.totalCost - adminStats.deposit;
+
+    const adminOwnTotalBazar = document.getElementById("admin-own-total-bazar");
+    const adminOwnTotalMeals = document.getElementById("admin-own-total-meals");
+    const adminOwnMealRate = document.getElementById("admin-own-meal-rate");
+    const adminMyTotalMeals = document.getElementById("admin-my-total-meals");
+    const adminMyTotalCost = document.getElementById("admin-my-total-cost");
+    const adminMyDeposit = document.getElementById("admin-my-deposit");
+    const adminMyBalanceStatus = document.getElementById("admin-my-balance-status");
+
+    if (adminOwnTotalBazar) adminOwnTotalBazar.textContent = `${totalMessBazar} Tk`;
+    if (adminOwnTotalMeals) adminOwnTotalMeals.textContent = totalMessMeals;
+    if (adminOwnMealRate) adminOwnMealRate.textContent = `${mealRate.toFixed(2)} Tk`;
+    if (adminMyTotalMeals) adminMyTotalMeals.textContent = adminStats.meals;
+    if (adminMyTotalCost) adminMyTotalCost.textContent = `${adminStats.totalCost.toFixed(2)} Tk`;
+    if (adminMyDeposit) adminMyDeposit.textContent = `${adminStats.deposit} Tk`;
+
+    if (adminMyBalanceStatus) {
+      if (adminDue > 0) {
+        adminMyBalanceStatus.style.color = "#dc2626";
+        adminMyBalanceStatus.textContent = `${adminDue.toFixed(2)} Tk (Due)`;
+      } else {
+        adminMyBalanceStatus.style.color = "#16a34a";
+        adminMyBalanceStatus.textContent = `${Math.abs(adminDue).toFixed(2)} Tk (Get Money)`;
+      }
+    }
 
     let settlementHtml = "";
     MEMBERS_LIST.forEach(name => {
