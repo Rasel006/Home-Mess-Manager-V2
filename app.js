@@ -22,6 +22,16 @@ function getTodayDateStr() {
   return `${year}-${month}-${day}`;
 }
 
+// Helper to get Tomorrow's Date String
+function getTomorrowDateStr() {
+  const now = new Date();
+  now.setDate(now.getDate() + 1);
+  const year = now.getFullYear();
+  const month = String(now.getMonth() + 1).padStart(2, '0');
+  const day = String(now.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 // ------------------------------------
 // AUTO LOGIN CHECK ON APP LOAD (For index.html)
 // ------------------------------------
@@ -158,8 +168,29 @@ if (welcomeName) {
   }
 
   const todayStr = getTodayDateStr();
+  const tomorrowStr = getTomorrowDateStr();
+  let activeTabDate = todayStr; // Default active tab is today
+
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
+
+  // Injecting Date Toggle Tabs dynamically inside Member Dashboard Meal Card Header or before it if needed, 
+  // or we can handle it seamlessly. Let's add a date selector tab UI dynamically above meal inputs:
+  const mealCard = document.querySelector(".card h3")?.closest(".card");
+  if (mealCard && !document.getElementById("meal-date-tab-container")) {
+    const tabDiv = document.createElement("div");
+    tabDiv.id = "meal-date-tab-container";
+    tabDiv.style.cssText = "display: flex; gap: 8px; margin-bottom: 12px;";
+    tabDiv.innerHTML = `
+      <button id="tab-today" style="flex: 1; padding: 6px; font-weight: bold; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1); background: var(--primary, #2563eb); color: #fff; cursor: pointer;">Today (${todayStr})</button>
+      <button id="tab-tomorrow" style="flex: 1; padding: 6px; font-weight: bold; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1); background: #f1f5f9; color: #334155; cursor: pointer;">Tomorrow (${tomorrowStr})</button>
+    `;
+    // Insert after card title paragraph or header
+    const pTag = mealCard.querySelector("p");
+    if (pTag) {
+      pTag.parentNode.insertBefore(tabDiv, pTag);
+    }
+  }
 
   // Deposit Request Submit
   const depositForm = document.getElementById("deposit-form");
@@ -349,8 +380,14 @@ if (welcomeName) {
   const dinnerPlus = document.getElementById("dinner-plus");
   const dinnerMinus = document.getElementById("dinner-minus");
 
-  function isLunchCutoffPassed() { return new Date().getHours() >= 12; }
-  function isDinnerCutoffPassed() { return new Date().getHours() >= 20; }
+  function isLunchCutoffPassed() { 
+    if (activeTabDate !== todayStr) return false; // Tomorrow has no cutoff restriction
+    return new Date().getHours() >= 12; 
+  }
+  function isDinnerCutoffPassed() { 
+    if (activeTabDate !== todayStr) return false; // Tomorrow has no cutoff restriction
+    return new Date().getHours() >= 20; 
+  }
 
   function updateUIState() {
     const lunchLocked = isLunchCutoffPassed();
@@ -361,7 +398,7 @@ if (welcomeName) {
     if (dinnerPlus) dinnerPlus.disabled = dinnerLocked || !isEditingMode;
     if (dinnerMinus) dinnerMinus.disabled = dinnerLocked || !isEditingMode;
 
-    if (lunchLocked && dinnerLocked) {
+    if (lunchLocked && dinnerLocked && activeTabDate === todayStr) {
       if (saveBtn) {
         saveBtn.disabled = true;
         saveBtn.style.backgroundColor = "#94a3b8";
@@ -381,7 +418,7 @@ if (welcomeName) {
           saveBtn.style.flex = "1";
           saveBtn.disabled = true;
           saveBtn.style.backgroundColor = "#16a34a";
-          saveBtn.textContent = "✓ Meal Saved";
+          saveBtn.textContent = `✓ Meal Saved (${activeTabDate})`;
         }
         if (editBtn) editBtn.style.display = "inline-block";
       } else {
@@ -390,7 +427,7 @@ if (welcomeName) {
           saveBtn.style.flex = "1";
           saveBtn.disabled = false;
           saveBtn.style.backgroundColor = "#2563eb";
-          saveBtn.textContent = isSubmitted ? "Update Meal" : "Save Meal";
+          saveBtn.textContent = isSubmitted ? `Update Meal (${activeTabDate})` : `Save Meal (${activeTabDate})`;
         }
         if (editBtn) editBtn.style.display = "none";
       }
@@ -408,9 +445,9 @@ if (welcomeName) {
 
   if (saveBtn) {
     saveBtn.onclick = () => {
-      if (isLunchCutoffPassed() && isDinnerCutoffPassed()) return;
+      if (activeTabDate === todayStr && isLunchCutoffPassed() && isDinnerCutoffPassed()) return;
 
-      set(ref(db, `meals/${todayStr}/${currentUser.name}`), {
+      set(ref(db, `meals/${activeTabDate}/${currentUser.name}`), {
         lunch: lunchCount,
         dinner: dinnerCount,
         submitted: true
@@ -420,7 +457,7 @@ if (welcomeName) {
         isEditingMode = false;
         if (saveMsg) {
           saveMsg.style.color = "#16a34a";
-          saveMsg.textContent = "Saved successfully!";
+          saveMsg.textContent = `Saved successfully for ${activeTabDate}!`;
           setTimeout(() => { if (saveMsg) saveMsg.textContent = ""; }, 2500);
         }
         updateUIState();
@@ -429,44 +466,86 @@ if (welcomeName) {
     };
   }
 
-  onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
-    const data = snapshot.val() || {};
-    const boardBody = document.getElementById("board-body");
-    let totalLunch = 0, totalDinner = 0, rowsHtml = "";
+  let unsubscribeMeals = null;
 
-    if (data[currentUser.name]) {
-      lunchCount = data[currentUser.name].lunch || 0;
-      dinnerCount = data[currentUser.name].dinner || 0;
-      isSubmitted = data[currentUser.name].submitted || false;
+  function listenToMealsForDate(dateStr) {
+    if (unsubscribeMeals) unsubscribeMeals(); // Remove previous listener if any
+
+    unsubscribeMeals = onValue(ref(db, `meals/${dateStr}`), (snapshot) => {
+      const data = snapshot.val() || {};
+      const boardBody = document.getElementById("board-body");
+      let totalLunch = 0, totalDinner = 0, rowsHtml = "";
+
+      if (data[currentUser.name]) {
+        lunchCount = data[currentUser.name].lunch || 0;
+        dinnerCount = data[currentUser.name].dinner || 0;
+        isSubmitted = data[currentUser.name].submitted || false;
+      } else {
+        lunchCount = 0;
+        dinnerCount = 0;
+        isSubmitted = false;
+        isEditingMode = true;
+      }
 
       if (lunchVal) lunchVal.textContent = lunchCount;
       if (dinnerVal) dinnerVal.textContent = dinnerCount;
-    }
 
-    updateUIState();
+      updateUIState();
 
-    MEMBERS_LIST.forEach((name) => {
-      const meal = data[name] || { lunch: 0, dinner: 0 };
-      totalLunch += (meal.lunch || 0);
-      totalDinner += (meal.dinner || 0);
+      MEMBERS_LIST.forEach((name) => {
+        const meal = data[name] || { lunch: 0, dinner: 0 };
+        totalLunch += (meal.lunch || 0);
+        totalDinner += (meal.dinner || 0);
 
-      rowsHtml += `<tr ${name === currentUser.name ? 'class="highlight-user"' : ''}>
-        <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
-        <td>${meal.lunch}</td>
-        <td>${meal.dinner}</td>
-      </tr>`;
+        rowsHtml += `<tr ${name === currentUser.name ? 'class="highlight-user"' : ''}>
+          <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
+          <td>${meal.lunch}</td>
+          <td>${meal.dinner}</td>
+        </tr>`;
+      });
+
+      if (boardBody) boardBody.innerHTML = rowsHtml;
+
+      const totalLunchEl = document.getElementById("total-lunch");
+      const totalDinnerEl = document.getElementById("total-dinner");
+      const totalDayEl = document.getElementById("total-day");
+
+      if (totalLunchEl) totalLunchEl.textContent = totalLunch;
+      if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
+      if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
     });
+  }
 
-    if (boardBody) boardBody.innerHTML = rowsHtml;
+  // Initial load for Today
+  listenToMealsForDate(todayStr);
 
-    const totalLunchEl = document.getElementById("total-lunch");
-    const totalDinnerEl = document.getElementById("total-dinner");
-    const totalDayEl = document.getElementById("total-day");
+  // Tab click listeners
+  const tabToday = document.getElementById("tab-today");
+  const tabTomorrow = document.getElementById("tab-tomorrow");
 
-    if (totalLunchEl) totalLunchEl.textContent = totalLunch;
-    if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
-    if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
-  });
+  if (tabToday && tabTomorrow) {
+    tabToday.onclick = () => {
+      activeTabDate = todayStr;
+      isEditingMode = true;
+      tabToday.style.background = "var(--primary, #2563eb)";
+      tabToday.style.color = "#fff";
+      tabTomorrow.style.background = "#f1f5f9";
+      tabTomorrow.style.color = "#334155";
+      if (currentDateEl) currentDateEl.textContent = todayStr;
+      listenToMealsForDate(todayStr);
+    };
+
+    tabTomorrow.onclick = () => {
+      activeTabDate = tomorrowStr;
+      isEditingMode = true;
+      tabTomorrow.style.background = "var(--primary, #2563eb)";
+      tabTomorrow.style.color = "#fff";
+      tabToday.style.background = "#f1f5f9";
+      tabToday.style.color = "#334155";
+      if (currentDateEl) currentDateEl.textContent = tomorrowStr;
+      listenToMealsForDate(tomorrowStr);
+    };
+  }
 
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
@@ -490,11 +569,27 @@ if (bazarForm) {
   }
 
   const todayStr = getTodayDateStr();
+  const tomorrowStr = getTomorrowDateStr();
+  let adminActiveDate = todayStr; // Default active date for Admin control & live board
+
   const bazarDate = document.getElementById("bazar-date");
   if (bazarDate) bazarDate.value = todayStr;
 
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
+
+  // Inject Admin Date Toggle Tabs above Admin Meal Control Card
+  const adminMealCard = document.querySelector(".card h3")?.closest(".card");
+  if (adminMealCard && !document.getElementById("admin-meal-date-tab-container")) {
+    const tabDiv = document.createElement("div");
+    tabDiv.id = "admin-meal-date-tab-container";
+    tabDiv.style.cssText = "display: flex; gap: 8px; margin-bottom: 12px;";
+    tabDiv.innerHTML = `
+      <button id="admin-tab-today" style="flex: 1; padding: 6px; font-weight: bold; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1); background: var(--primary, #2563eb); color: #fff; cursor: pointer;">Today (${todayStr})</button>
+      <button id="admin-tab-tomorrow" style="flex: 1; padding: 6px; font-weight: bold; border-radius: 6px; border: 1px solid var(--border-color, #cbd5e1); background: #f1f5f9; color: #334155; cursor: pointer;">Tomorrow (${tomorrowStr})</button>
+    `;
+    adminMealCard.insertBefore(tabDiv, adminMealCard.querySelector("div"));
+  }
 
   // Admin Own Meal Control State & Handlers
   let adminLunch = 0;
@@ -514,19 +609,19 @@ if (bazarForm) {
 
   if (saveAdminMealBtn) {
     saveAdminMealBtn.onclick = () => {
-      set(ref(db, `meals/${todayStr}/Rizu`), {
+      set(ref(db, `meals/${adminActiveDate}/Rizu`), {
         lunch: adminLunch,
         dinner: adminDinner,
         submitted: true
       }).then(() => {
-        alert("Your meal updated successfully!");
+        alert(`Your meal updated successfully for ${adminActiveDate}!`);
       });
     };
   }
 
   // Live Board & Instant Edit Handler (Direct +/- buttons in table for all members including Admin)
   window.changeMeal = async (name, type, delta) => {
-    const mealSnap = await get(ref(db, `meals/${todayStr}/${name}`));
+    const mealSnap = await get(ref(db, `meals/${adminActiveDate}/${name}`));
     let currentData = mealSnap.exists() ? mealSnap.val() : { lunch: 0, dinner: 0, submitted: true };
     
     if (type === 'lunch') {
@@ -536,58 +631,95 @@ if (bazarForm) {
     }
     currentData.submitted = true;
 
-    await set(ref(db, `meals/${todayStr}/${name}`), currentData);
+    await set(ref(db, `meals/${adminActiveDate}/${name}`), currentData);
   };
 
-  // Load Live Board & Admin Meal initial values from Firebase
-  onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
-    const data = snapshot.val() || {};
-    const boardBody = document.getElementById("board-body");
-    let totalLunch = 0, totalDinner = 0, rowsHtml = "";
+  let unsubscribeAdminMeals = null;
 
-    // Sync Admin Meal Top Section if data exists
-    if (data["Rizu"]) {
-      adminLunch = data["Rizu"].lunch || 0;
-      adminDinner = data["Rizu"].dinner || 0;
+  function listenAdminMealsForDate(dateStr) {
+    if (unsubscribeAdminMeals) unsubscribeAdminMeals();
+
+    unsubscribeAdminMeals = onValue(ref(db, `meals/${dateStr}`), (snapshot) => {
+      const data = snapshot.val() || {};
+      const boardBody = document.getElementById("board-body");
+      let totalLunch = 0, totalDinner = 0, rowsHtml = "";
+
+      // Sync Admin Meal Top Section if data exists
+      if (data["Rizu"]) {
+        adminLunch = data["Rizu"].lunch || 0;
+        adminDinner = data["Rizu"].dinner || 0;
+      } else {
+        adminLunch = 0;
+        adminDinner = 0;
+      }
       if (adminLunchVal) adminLunchVal.textContent = adminLunch;
       if (adminDinnerVal) adminDinnerVal.textContent = adminDinner;
-    }
 
-    MEMBERS_LIST.forEach((name) => {
-      const meal = data[name] || { lunch: 0, dinner: 0 };
-      totalLunch += (meal.lunch || 0);
-      totalDinner += (meal.dinner || 0);
+      MEMBERS_LIST.forEach((name) => {
+        const meal = data[name] || { lunch: 0, dinner: 0 };
+        totalLunch += (meal.lunch || 0);
+        totalDinner += (meal.dinner || 0);
 
-      rowsHtml += `<tr>
-        <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
-        <td>
-          <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-            <button onclick="changeMeal('${name}', 'lunch', -1)" style="padding: 2px 6px; cursor: pointer;">-</button>
-            <span style="min-width: 15px; text-align: center;">${meal.lunch}</span>
-            <button onclick="changeMeal('${name}', 'lunch', 1)" style="padding: 2px 6px; cursor: pointer;">+</button>
-          </div>
-        </td>
-        <td>
-          <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
-            <button onclick="changeMeal('${name}', 'dinner', -1)" style="padding: 2px 6px; cursor: pointer;">-</button>
-            <span style="min-width: 15px; text-align: center;">${meal.dinner}</span>
-            <button onclick="changeMeal('${name}', 'dinner', 1)" style="padding: 2px 6px; cursor: pointer;">+</button>
-          </div>
-        </td>
-        <td><span style="color: #16a34a; font-size: 0.8rem; font-weight: bold;">⚡ Live Edit</span></td>
-      </tr>`;
+        rowsHtml += `<tr>
+          <td>${name} ${name === 'Rizu' ? '(Admin)' : ''}</td>
+          <td>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <button onclick="changeMeal('${name}', 'lunch', -1)" style="padding: 2px 6px; cursor: pointer;">-</button>
+              <span style="min-width: 15px; text-align: center;">${meal.lunch}</span>
+              <button onclick="changeMeal('${name}', 'lunch', 1)" style="padding: 2px 6px; cursor: pointer;">+</button>
+            </div>
+          </td>
+          <td>
+            <div style="display: flex; align-items: center; justify-content: center; gap: 4px;">
+              <button onclick="changeMeal('${name}', 'dinner', -1)" style="padding: 2px 6px; cursor: pointer;">-</button>
+              <span style="min-width: 15px; text-align: center;">${meal.dinner}</span>
+              <button onclick="changeMeal('${name}', 'dinner', 1)" style="padding: 2px 6px; cursor: pointer;">+</button>
+            </div>
+          </td>
+          <td><span style="color: #16a34a; font-size: 0.8rem; font-weight: bold;">⚡ Live Edit</span></td>
+        </tr>`;
+      });
+
+      if (boardBody) boardBody.innerHTML = rowsHtml;
+
+      const totalLunchEl = document.getElementById("total-lunch");
+      const totalDinnerEl = document.getElementById("total-dinner");
+      const totalDayEl = document.getElementById("total-day");
+
+      if (totalLunchEl) totalLunchEl.textContent = totalLunch;
+      if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
+      if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
     });
+  }
 
-    if (boardBody) boardBody.innerHTML = rowsHtml;
+  // Initial load for Today
+  listenAdminMealsForDate(todayStr);
 
-    const totalLunchEl = document.getElementById("total-lunch");
-    const totalDinnerEl = document.getElementById("total-dinner");
-    const totalDayEl = document.getElementById("total-day");
+  // Admin Tab Click Handlers
+  const adminTabToday = document.getElementById("admin-tab-today");
+  const adminTabTomorrow = document.getElementById("admin-tab-tomorrow");
 
-    if (totalLunchEl) totalLunchEl.textContent = totalLunch;
-    if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
-    if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
-  });
+  if (adminTabToday && adminTabTomorrow) {
+    adminTabToday.onclick = () => {
+      adminActiveDate = todayStr;
+      adminTabToday.style.background = "var(--primary, #2563eb)";
+      adminTabToday.style.color = "#fff";
+      adminTabTomorrow.style.background = "#f1f5f9";
+      adminTabTomorrow.style.color = "#334155";
+      if (currentDateEl) currentDateEl.textContent = todayStr;
+      listenAdminMealsForDate(todayStr);
+    };
+
+    adminTabTomorrow.onclick = () => {
+      adminActiveDate = tomorrowStr;
+      adminTabTomorrow.style.background = "var(--primary, #2563eb)";
+      adminTabTomorrow.style.color = "#fff";
+      adminTabToday.style.background = "#f1f5f9";
+      adminTabToday.style.color = "#334155";
+      if (currentDateEl) currentDateEl.textContent = tomorrowStr;
+      listenAdminMealsForDate(tomorrowStr);
+    };
+  }
 
   // Admin Notification Broadcast Form Handler
   const adminNotifForm = document.getElementById("admin-notification-form");
