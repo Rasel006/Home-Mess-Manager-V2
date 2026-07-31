@@ -496,7 +496,35 @@ if (bazarForm) {
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
 
-  // Live Board & Instant Edit Handler (Direct +/- buttons in table)
+  // Admin Own Meal Control State & Handlers
+  let adminLunch = 0;
+  let adminDinner = 0;
+  const adminLunchVal = document.getElementById("lunch-val");
+  const adminDinnerVal = document.getElementById("dinner-val");
+  const adminLunchPlus = document.getElementById("lunch-plus");
+  const adminLunchMinus = document.getElementById("lunch-minus");
+  const adminDinnerPlus = document.getElementById("dinner-plus");
+  const adminDinnerMinus = document.getElementById("dinner-minus");
+  const saveAdminMealBtn = document.getElementById("save-meal-btn"); // Save Admin Meal Button
+
+  if (adminLunchPlus) adminLunchPlus.onclick = () => { adminLunch++; if (adminLunchVal) adminLunchVal.textContent = adminLunch; };
+  if (adminLunchMinus) adminLunchMinus.onclick = () => { if (adminLunch > 0) adminLunch--; if (adminLunchVal) adminLunchVal.textContent = adminLunch; };
+  if (adminDinnerPlus) adminDinnerPlus.onclick = () => { adminDinner++; if (adminDinnerVal) adminDinnerVal.textContent = adminDinner; };
+  if (adminDinnerMinus) adminDinnerMinus.onclick = () => { if (adminDinner > 0) adminDinner--; if (adminDinnerVal) adminDinnerVal.textContent = adminDinner; };
+
+  if (saveAdminMealBtn) {
+    saveAdminMealBtn.onclick = () => {
+      set(ref(db, `meals/${todayStr}/Rizu`), {
+        lunch: adminLunch,
+        dinner: adminDinner,
+        submitted: true
+      }).then(() => {
+        alert("Your meal updated successfully!");
+      });
+    };
+  }
+
+  // Live Board & Instant Edit Handler (Direct +/- buttons in table for all members including Admin)
   window.changeMeal = async (name, type, delta) => {
     const mealSnap = await get(ref(db, `meals/${todayStr}/${name}`));
     let currentData = mealSnap.exists() ? mealSnap.val() : { lunch: 0, dinner: 0, submitted: true };
@@ -511,11 +539,19 @@ if (bazarForm) {
     await set(ref(db, `meals/${todayStr}/${name}`), currentData);
   };
 
-  // Load Live Board with +/- buttons for Admin
+  // Load Live Board & Admin Meal initial values from Firebase
   onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
     const data = snapshot.val() || {};
     const boardBody = document.getElementById("board-body");
     let totalLunch = 0, totalDinner = 0, rowsHtml = "";
+
+    // Sync Admin Meal Top Section if data exists
+    if (data["Rizu"]) {
+      adminLunch = data["Rizu"].lunch || 0;
+      adminDinner = data["Rizu"].dinner || 0;
+      if (adminLunchVal) adminLunchVal.textContent = adminLunch;
+      if (adminDinnerVal) adminDinnerVal.textContent = adminDinner;
+    }
 
     MEMBERS_LIST.forEach((name) => {
       const meal = data[name] || { lunch: 0, dinner: 0 };
@@ -552,6 +588,21 @@ if (bazarForm) {
     if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
     if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
   });
+
+  // Admin Notification Broadcast Form Handler
+  const adminNotifForm = document.getElementById("admin-notification-form");
+  if (adminNotifForm) {
+    adminNotifForm.onsubmit = (e) => {
+      e.preventDefault();
+      const title = document.getElementById("admin-notif-title").value.trim();
+      const message = document.getElementById("admin-notif-msg").value.trim();
+      if (!title || !message) return;
+
+      sendNotification(title, message);
+      alert("Notification broadcasted successfully to all members!");
+      adminNotifForm.reset();
+    };
+  }
 
   // Pending Requests Listener
   onValue(ref(db, "pending_requests"), (snapshot) => {
