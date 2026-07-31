@@ -23,6 +23,77 @@ function getTodayDateStr() {
 }
 
 // ------------------------------------
+// AUTO LOGIN CHECK ON APP LOAD (For index.html)
+// ------------------------------------
+window.addEventListener("DOMContentLoaded", () => {
+  const savedUser = localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser");
+  const isIndexPage = window.location.pathname.includes("index.html") || window.location.pathname.endsWith("/");
+
+  if (savedUser && isIndexPage) {
+    const currentUser = JSON.parse(savedUser);
+    if (currentUser.role === "admin") {
+      window.location.href = "admin.html";
+    } else {
+      window.location.href = "member.html";
+    }
+  }
+});
+
+// Global Notification Fetcher & UI Toggle
+function initNotifications() {
+  const bellBtn = document.getElementById("bell-icon-btn");
+  const dropdown = document.getElementById("notif-dropdown");
+  
+  if (bellBtn && dropdown) {
+    bellBtn.onclick = (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === "none" ? "block" : "none";
+    };
+    window.onclick = () => { dropdown.style.display = "none"; };
+    dropdown.onclick = (e) => { e.stopPropagation(); };
+  }
+
+  onValue(ref(db, "notifications"), (snapshot) => {
+    const listEl = document.getElementById("notification-list");
+    const badgeEl = document.getElementById("notif-badge");
+    if (!listEl) return;
+
+    if (!snapshot.exists()) {
+      listEl.innerHTML = `<small style="color: #64748b;">No new notifications.</small>`;
+      if (badgeEl) badgeEl.style.display = "none";
+      return;
+    }
+
+    const data = snapshot.val();
+    let html = "";
+    let count = 0;
+
+    Object.values(data).reverse().forEach(item => {
+      count++;
+      html += `<div style="padding: 6px 0; border-bottom: 1px solid #f1f5f9; font-size: 0.82rem;">
+        <strong>${item.title}</strong>
+        <p style="margin: 2px 0; color: #334155;">${item.message}</p>
+        <span style="font-size: 0.7rem; color: #94a3b8;">${item.time}</span>
+      </div>`;
+    });
+
+    listEl.innerHTML = html;
+    if (badgeEl) {
+      badgeEl.textContent = count;
+      badgeEl.style.display = "inline-block";
+    }
+  });
+}
+
+function sendNotification(title, message) {
+  push(ref(db, "notifications"), {
+    title: title,
+    message: message,
+    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  });
+}
+
+// ------------------------------------
 // 1. LOGIN LOGIC (index.html)
 // ------------------------------------
 const loginForm = document.getElementById("login-form");
@@ -31,6 +102,7 @@ if (loginForm) {
     e.preventDefault();
     const userSelect = document.getElementById("user-select");
     const pinInput = document.getElementById("pin-input");
+    const rememberMe = document.getElementById("remember-me").checked;
     const errorMsg = document.getElementById("error-msg");
 
     const username = userSelect.value;
@@ -39,44 +111,31 @@ if (loginForm) {
 
     errorMsg.textContent = "Verifying...";
 
-    if (role === "admin") {
-      try {
-        const adminPinSnap = await get(ref(db, "users/Rizu/pin"));
-        let storedAdminPin = "Admin123";
-
-        if (adminPinSnap.exists()) {
-          storedAdminPin = adminPinSnap.val();
-        } else {
-          await set(ref(db, "users/Rizu/pin"), "Admin123");
-        }
-
-        if (inputPin === storedAdminPin) {
-          sessionStorage.setItem("currentUser", JSON.stringify({ name: username, role: "admin" }));
-          window.location.href = "admin.html";
-        } else {
-          errorMsg.textContent = "Invalid Admin PIN!";
-        }
-      } catch (err) {
-        errorMsg.textContent = "Admin Login error: " + err.message;
-      }
-      return;
-    }
+    let storedPin = "1234";
+    let pinRefPath = role === "admin" ? "users/Rizu/pin" : `users/${username}/pin`;
+    let defaultPin = role === "admin" ? "Admin123" : "1234";
 
     try {
-      const userPinSnap = await get(ref(db, `users/${username}/pin`));
-      let storedPin = "1234";
-
-      if (userPinSnap.exists()) {
-        storedPin = userPinSnap.val();
+      const pinSnap = await get(ref(db, pinRefPath));
+      if (pinSnap.exists()) {
+        storedPin = pinSnap.val();
       } else {
-        await set(ref(db, `users/${username}/pin`), "1234");
+        await set(ref(db, pinRefPath), defaultPin);
+        storedPin = defaultPin;
       }
 
       if (inputPin === storedPin) {
-        sessionStorage.setItem("currentUser", JSON.stringify({ name: username, role: "member" }));
-        window.location.href = "member.html";
+        const userData = JSON.stringify({ name: username, role: role });
+        
+        if (rememberMe) {
+          localStorage.setItem("currentUser", userData);
+        } else {
+          sessionStorage.setItem("currentUser", userData);
+        }
+
+        window.location.href = role === "admin" ? "admin.html" : "member.html";
       } else {
-        errorMsg.textContent = "Incorrect PIN! Default is 1234.";
+        errorMsg.textContent = role === "admin" ? "Invalid Admin PIN!" : "Incorrect PIN! Default is 1234.";
       }
     } catch (err) {
       errorMsg.textContent = "Login error: " + err.message;
@@ -89,7 +148,9 @@ if (loginForm) {
 // ------------------------------------
 const welcomeName = document.getElementById("welcome-name");
 if (welcomeName) {
-  const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
+  initNotifications();
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser"));
+  
   if (!currentUser) {
     window.location.href = "index.html";
   } else {
@@ -114,6 +175,7 @@ if (welcomeName) {
         amount: amount,
         date: todayStr
       }).then(() => {
+        sendNotification("New Deposit Request", `${currentUser.name} requested a deposit of ৳${amount}`);
         alert("Deposit request sent to Admin for approval!");
         depositForm.reset();
       });
@@ -135,6 +197,7 @@ if (welcomeName) {
         amount: amount,
         date: todayStr
       }).then(() => {
+        sendNotification("New Bazar Expense", `${currentUser.name} submitted bazar: ${item} (৳${amount})`);
         alert("Bazar expense request sent to Admin for approval!");
         memberBazarForm.reset();
       });
@@ -180,9 +243,7 @@ if (welcomeName) {
     const depositSnap = await get(ref(db, `deposits/${currentUser.name}`));
     if (depositSnap.exists()) {
       const deposits = depositSnap.val();
-      Object.values(deposits).forEach(d => {
-        userDeposit += (d.amount || 0);
-      });
+      Object.values(deposits).forEach(d => { userDeposit += (d.amount || 0); });
     }
 
     const mealsSnap = await get(ref(db, "meals"));
@@ -194,9 +255,7 @@ if (welcomeName) {
           Object.keys(allMeals[dateStr]).forEach(mem => {
             const sum = (allMeals[dateStr][mem].lunch || 0) + (allMeals[dateStr][mem].dinner || 0);
             totalMessMeals += sum;
-            if (mem === currentUser.name) {
-              userMeals += sum;
-            }
+            if (mem === currentUser.name) { userMeals += sum; }
           });
         }
       });
@@ -208,9 +267,7 @@ if (welcomeName) {
       Object.keys(allBazar).forEach(dateStr => {
         const d = new Date(dateStr);
         if (!isNaN(d.getTime()) && d.getFullYear() === targetYear && (d.getMonth() + 1) === targetMonth) {
-          Object.values(allBazar[dateStr]).forEach(b => {
-            totalMessBazar += (b.amount || 0);
-          });
+          Object.values(allBazar[dateStr]).forEach(b => { totalMessBazar += (b.amount || 0); });
         }
       });
     }
@@ -249,6 +306,7 @@ if (welcomeName) {
 
   calculateUserFinancials();
 
+  // PIN Update
   const updatePinBtn = document.getElementById("update-pin-btn");
   if (updatePinBtn) {
     updatePinBtn.onclick = () => {
@@ -314,7 +372,7 @@ if (welcomeName) {
       if (editBtn) editBtn.style.display = "none";
       if (saveMsg) {
         saveMsg.style.color = "#ef4444";
-        saveMsg.textContent = "Cutoff passed (Lunch: 12 PM, Dinner: 8 PM). Contact Admin (Rizu) for changes.";
+        saveMsg.textContent = "Cutoff passed. Contact Admin for changes.";
       }
     } else {
       if (isSubmitted && !isEditingMode) {
@@ -336,14 +394,6 @@ if (welcomeName) {
         }
         if (editBtn) editBtn.style.display = "none";
       }
-
-      let msg = "";
-      if (lunchLocked) msg += "Lunch locked (past 12 PM). ";
-      if (dinnerLocked) msg += "Dinner locked (past 8 PM). ";
-      if (saveMsg) {
-        saveMsg.style.color = "#d97706";
-        saveMsg.textContent = msg;
-      }
     }
   }
 
@@ -353,10 +403,7 @@ if (welcomeName) {
   if (dinnerMinus) dinnerMinus.onclick = () => { if (!isDinnerCutoffPassed() && isEditingMode && dinnerCount > 0) { dinnerCount--; if (dinnerVal) dinnerVal.textContent = dinnerCount; } };
 
   if (editBtn) {
-    editBtn.onclick = () => {
-      isEditingMode = true;
-      updateUIState();
-    };
+    editBtn.onclick = () => { isEditingMode = true; updateUIState(); };
   }
 
   if (saveBtn) {
@@ -368,23 +415,17 @@ if (welcomeName) {
         dinner: dinnerCount,
         submitted: true
       })
-        .then(() => {
-          isSubmitted = true;
-          isEditingMode = false;
-          if (saveMsg) {
-            saveMsg.style.color = "#16a34a";
-            saveMsg.textContent = "Saved successfully!";
-            setTimeout(() => { if (saveMsg) saveMsg.textContent = ""; }, 2500);
-          }
-          updateUIState();
-          calculateUserFinancials();
-        })
-        .catch(err => {
-          if (saveMsg) {
-            saveMsg.style.color = "#ef4444";
-            saveMsg.textContent = err.message;
-          }
-        });
+      .then(() => {
+        isSubmitted = true;
+        isEditingMode = false;
+        if (saveMsg) {
+          saveMsg.style.color = "#16a34a";
+          saveMsg.textContent = "Saved successfully!";
+          setTimeout(() => { if (saveMsg) saveMsg.textContent = ""; }, 2500);
+        }
+        updateUIState();
+        calculateUserFinancials();
+      });
     };
   }
 
@@ -397,10 +438,6 @@ if (welcomeName) {
       lunchCount = data[currentUser.name].lunch || 0;
       dinnerCount = data[currentUser.name].dinner || 0;
       isSubmitted = data[currentUser.name].submitted || false;
-
-      if (isSubmitted && isEditingMode === true && !saveBtn.onclick) {
-        isEditingMode = false;
-      }
 
       if (lunchVal) lunchVal.textContent = lunchCount;
       if (dinnerVal) dinnerVal.textContent = dinnerCount;
@@ -434,6 +471,7 @@ if (welcomeName) {
   const logoutBtn = document.getElementById("logout-btn");
   if (logoutBtn) {
     logoutBtn.onclick = () => {
+      localStorage.removeItem("currentUser");
       sessionStorage.removeItem("currentUser");
       window.location.href = "index.html";
     };
@@ -445,9 +483,16 @@ if (welcomeName) {
 // ------------------------------------
 const bazarForm = document.getElementById("bazar-form");
 if (bazarForm) {
+  initNotifications();
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser"));
+  if (!currentUser || currentUser.role !== "admin") {
+    window.location.href = "index.html";
+  }
+
   const monthSelect = document.getElementById("month-select");
   const bazarDate = document.getElementById("bazar-date");
   const todayStr = getTodayDateStr();
+  if (bazarDate) bazarDate.value = todayStr;
 
   const currentDateEl = document.getElementById("current-date");
   if (currentDateEl) currentDateEl.textContent = todayStr;
@@ -493,313 +538,77 @@ if (bazarForm) {
     const req = snap.val();
     if (req.type === "deposit") {
       await push(ref(db, `deposits/${req.userName}`), { amount: req.amount, date: req.date });
+      sendNotification("Deposit Approved", `${req.userName}'s deposit of ৳${req.amount} was approved.`);
     } else if (req.type === "bazar") {
       await push(ref(db, `bazar/${req.date}`), { item: req.item, amount: req.amount, addedBy: req.userName });
+      sendNotification("Bazar Approved", `${req.userName}'s bazar (${req.item} - ৳${req.amount}) was approved.`);
     }
 
     await remove(ref(db, `pending_requests/${key}`));
-    loadMonthlyData(monthSelect.value);
+    if (monthSelect) loadMonthlyData(monthSelect.value);
   };
 
   window.rejectRequest = async (key) => {
+    const snap = await get(ref(db, `pending_requests/${key}`));
+    if (snap.exists()) {
+      const req = snap.val();
+      sendNotification("Request Rejected", `${req.userName}'s ${req.type} request was rejected.`);
+    }
     await remove(ref(db, `pending_requests/${key}`));
   };
 
-  let adminLunchCount = 0;
-  let adminDinnerCount = 0;
-  const lunchVal = document.getElementById("lunch-val");
-  const dinnerVal = document.getElementById("dinner-val");
-
-  if (lunchVal && dinnerVal) {
-    const lunchPlus = document.getElementById("lunch-plus");
-    const lunchMinus = document.getElementById("lunch-minus");
-    const dinnerPlus = document.getElementById("dinner-plus");
-    const dinnerMinus = document.getElementById("dinner-minus");
-    const saveMealBtn = document.getElementById("save-meal-btn");
-
-    if (lunchPlus) lunchPlus.onclick = () => { adminLunchCount++; lunchVal.textContent = adminLunchCount; };
-    if (lunchMinus) lunchMinus.onclick = () => { if (adminLunchCount > 0) adminLunchCount--; lunchVal.textContent = adminLunchCount; };
-    if (dinnerPlus) dinnerPlus.onclick = () => { adminDinnerCount++; dinnerVal.textContent = adminDinnerCount; };
-    if (dinnerMinus) dinnerMinus.onclick = () => { if (adminDinnerCount > 0) adminDinnerCount--; dinnerVal.textContent = adminDinnerCount; };
-
-    if (saveMealBtn) {
-      saveMealBtn.onclick = () => {
-        const saveMsg = document.getElementById("save-msg");
-        set(ref(db, `meals/${todayStr}/Rizu`), { lunch: adminLunchCount, dinner: adminDinnerCount, submitted: true })
-          .then(() => {
-            if (saveMsg) {
-              saveMsg.style.color = "#16a34a";
-              saveMsg.textContent = "Admin meal saved successfully!";
-              setTimeout(() => saveMsg.textContent = "", 2500);
-            }
-            loadMonthlyData(monthSelect.value);
-          })
-          .catch(err => {
-            if (saveMsg) {
-              saveMsg.style.color = "#ef4444";
-              saveMsg.textContent = err.message;
-            }
-          });
-      };
-    }
-  }
-
   const adminDepositForm = document.getElementById("admin-deposit-form");
   if (adminDepositForm) {
-    adminDepositForm.addEventListener("submit", (e) => {
+    adminDepositForm.onsubmit = async (e) => {
       e.preventDefault();
-      const memberName = document.getElementById("admin-deposit-user").value;
+      const user = document.getElementById("admin-deposit-user").value;
       const amount = Number(document.getElementById("admin-deposit-amount").value);
+      if (!user || amount <= 0) return;
 
-      if (!memberName || amount <= 0) return;
-
-      push(ref(db, `deposits/${memberName}`), {
-        amount: amount,
-        date: todayStr
-      }).then(() => {
-        alert(`Deposit of ${amount} Tk added for ${memberName}!`);
-        adminDepositForm.reset();
-        loadMonthlyData(monthSelect.value);
-      });
-    });
+      await push(ref(db, `deposits/${user}`), { amount: amount, date: todayStr });
+      sendNotification("Direct Deposit Added", `Admin added ৳${amount} deposit for ${user}`);
+      alert("Deposit added successfully!");
+      adminDepositForm.reset();
+    };
   }
 
-  window.updateMemberMeal = (memberName, mealType, change) => {
-    const memberRef = ref(db, `meals/${todayStr}/${memberName}`);
-    get(memberRef).then((snapshot) => {
-      const currentData = snapshot.val() || { lunch: 0, dinner: 0, submitted: true };
-      let newCount = (currentData[mealType] || 0) + change;
-      if (newCount < 0) newCount = 0;
-
-      set(memberRef, {
-        ...currentData,
-        [mealType]: newCount,
-        submitted: true
-      });
-    });
-  };
-
-  onValue(ref(db, `meals/${todayStr}`), (snapshot) => {
-    const data = snapshot.val() || {};
-    const boardBody = document.getElementById("board-body");
-    let totalLunch = 0, totalDinner = 0, rowsHtml = "";
-
-    MEMBERS_LIST.forEach((name) => {
-      const meal = data[name] || { lunch: 0, dinner: 0 };
-      totalLunch += meal.lunch;
-      totalDinner += meal.dinner;
-
-      if (name === "Rizu" && snapshot.exists() && data["Rizu"]) {
-        adminLunchCount = meal.lunch;
-        adminDinnerCount = meal.dinner;
-        if (lunchVal) lunchVal.textContent = adminLunchCount;
-        if (dinnerVal) dinnerVal.textContent = adminDinnerCount;
-      }
-
-      rowsHtml += `<tr ${name === 'Rizu' ? 'class="highlight-user"' : ''}>
-        <td><strong>${name}</strong> ${name === 'Rizu' ? '(Admin)' : ''}</td>
-        <td>
-          <button class="btn-sm" onclick="updateMemberMeal('${name}', 'lunch', -1)">-</button>
-          <span style="margin: 0 6px; font-weight: bold;">${meal.lunch}</span>
-          <button class="btn-sm" onclick="updateMemberMeal('${name}', 'lunch', 1)">+</button>
-        </td>
-        <td>
-          <button class="btn-sm" onclick="updateMemberMeal('${name}', 'dinner', -1)">-</button>
-          <span style="margin: 0 6px; font-weight: bold;">${meal.dinner}</span>
-          <button class="btn-sm" onclick="updateMemberMeal('${name}', 'dinner', 1)">+</button>
-        </td>
-        <td>
-          <span style="font-size: 0.8rem; color: #16a34a;">⚡ Live Edit</span>
-        </td>
-      </tr>`;
-    });
-
-    if (boardBody) boardBody.innerHTML = rowsHtml;
-    const totalLunchEl = document.getElementById("total-lunch");
-    const totalDinnerEl = document.getElementById("total-dinner");
-    const totalDayEl = document.getElementById("total-day");
-
-    if (totalLunchEl) totalLunchEl.textContent = totalLunch;
-    if (totalDinnerEl) totalDinnerEl.textContent = totalDinner;
-    if (totalDayEl) totalDayEl.textContent = totalLunch + totalDinner;
-  });
-
-  const now = new Date();
-  const currentMonthStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
-  if (monthSelect) monthSelect.value = currentMonthStr;
-  if (bazarDate) bazarDate.value = todayStr;
-
-  bazarForm.addEventListener("submit", (e) => {
+  bazarForm.onsubmit = async (e) => {
     e.preventDefault();
     const item = document.getElementById("bazar-item").value;
     const amount = Number(document.getElementById("bazar-amount").value);
-    const date = bazarDate.value;
+    const date = bazarDate.value || todayStr;
 
-    push(ref(db, `bazar/${date}`), { item, amount })
-      .then(() => {
-        alert("Bazar expense added!");
-        bazarForm.reset();
-        bazarDate.value = getTodayDateStr();
-        loadMonthlyData(monthSelect.value);
-      });
-  });
-
-  async function loadMonthlyData(selectedYearMonth) {
-    if (!selectedYearMonth) return;
-
-    const [targetYear, targetMonth] = selectedYearMonth.split("-").map(Number);
-
-    let totalMeals = 0;
-    let totalBazar = 0;
-    const memberMealCounts = {};
-    const memberDeposits = {};
-    MEMBERS_LIST.forEach(m => {
-      memberMealCounts[m] = 0;
-      memberDeposits[m] = 0;
-    });
-
-    const depositSnap = await get(ref(db, "deposits"));
-    if (depositSnap.exists()) {
-      const allDeposits = depositSnap.val();
-      Object.keys(allDeposits).forEach(mem => {
-        if (memberDeposits[mem] !== undefined) {
-          Object.values(allDeposits[mem]).forEach(d => {
-            memberDeposits[mem] += (d.amount || 0);
-          });
-        }
-      });
-    }
-
-    const mealsSnap = await get(ref(db, "meals"));
-    if (mealsSnap.exists()) {
-      const allMeals = mealsSnap.val();
-      Object.keys(allMeals).forEach(dateStr => {
-        const d = new Date(dateStr);
-        if (!isNaN(d.getTime()) && d.getFullYear() === targetYear && (d.getMonth() + 1) === targetMonth) {
-          Object.keys(allMeals[dateStr]).forEach(mem => {
-            const mData = allMeals[dateStr][mem];
-            const sum = (mData.lunch || 0) + (mData.dinner || 0);
-            if (memberMealCounts[mem] !== undefined) memberMealCounts[mem] += sum;
-            totalMeals += sum;
-          });
-        }
-      });
-    }
-
-    const bazarSnap = await get(ref(db, "bazar"));
-    if (bazarSnap.exists()) {
-      const allBazar = bazarSnap.val();
-      Object.keys(allBazar).forEach(dateStr => {
-        const d = new Date(dateStr);
-        if (!isNaN(d.getTime()) && d.getFullYear() === targetYear && (d.getMonth() + 1) === targetMonth) {
-          Object.keys(allBazar[dateStr]).forEach(key => {
-            totalBazar += (allBazar[dateStr][key].amount || 0);
-          });
-        }
-      });
-    }
-
-    const mealRate = totalMeals > 0 ? (totalBazar / totalMeals) : 0;
-
-    const totMealsEl = document.getElementById("monthly-total-meals");
-    const totBazarEl = document.getElementById("monthly-total-bazar");
-    const mealRateEl = document.getElementById("calculated-meal-rate");
-
-    if (totMealsEl) totMealsEl.textContent = totalMeals;
-    if (totBazarEl) totBazarEl.textContent = `${totalBazar} Tk`;
-    if (mealRateEl) mealRateEl.textContent = `${mealRate.toFixed(2)} Tk`;
-
-    const board = document.getElementById("settlement-board-body");
-    if (board) {
-      let html = "";
-      MEMBERS_LIST.forEach(m => {
-        const meals = memberMealCounts[m];
-        const cost = (meals * mealRate);
-        const deposit = memberDeposits[m] || 0;
-        const due = cost - deposit;
-
-        let statusText = due > 0 
-          ? `<span style="color: #dc2626; font-weight: bold;">${due.toFixed(2)} Tk Due</span>` 
-          : `<span style="color: #16a34a; font-weight: bold;">${Math.abs(due).toFixed(2)} Tk Adv</span>`;
-
-        html += `<tr>
-          <td>${m} ${m === 'Rizu' ? '(Admin)' : ''}</td>
-          <td>${meals}</td>
-          <td>${deposit} Tk</td>
-          <td>${cost.toFixed(2)} Tk</td>
-          <td>${statusText}</td>
-        </tr>`;
-      });
-      board.innerHTML = html;
-    }
-
-    const copyBtn = document.getElementById("copy-summary-btn");
-    if (copyBtn) {
-      copyBtn.onclick = () => {
-        let msg = `📢 Monthly Mess Summary (${selectedYearMonth})\n`;
-        msg += `----------------------------------\n`;
-        msg += `🥣 Total Meals: ${totalMeals}\n`;
-        msg += `🛒 Total Bazar: ৳${totalBazar}\n`;
-        msg += `💡 Meal Rate: ৳${mealRate.toFixed(2)}\n\n`;
-        msg += `Member Status:\n`;
-
-        MEMBERS_LIST.forEach(m => {
-          const meals = memberMealCounts[m];
-          const cost = (meals * mealRate);
-          const deposit = memberDeposits[m] || 0;
-          const due = cost - deposit;
-
-          if (due > 0) {
-            msg += `• ${m}: ৳${due.toFixed(2)} (Due)\n`;
-          } else {
-            msg += `• ${m}: ৳${Math.abs(due).toFixed(2)} (Get Back)\n`;
-          }
-        });
-
-        msg += `----------------------------------\n`;
-        msg += `Please clear your dues on time!`;
-
-        navigator.clipboard.writeText(msg).then(() => {
-          alert("Monthly summary copied to clipboard! Ready to paste into Messenger.");
-        });
-      };
-    }
-  }
-
-  if (monthSelect) {
-    monthSelect.addEventListener("change", (e) => loadMonthlyData(e.target.value));
-  }
-  loadMonthlyData(currentMonthStr);
+    await push(ref(db, `bazar/${date}`), { item: item, amount: amount, addedBy: "Rizu (Admin)" });
+    sendNotification("New Bazar Entry", `Bazar recorded: ${item} (৳${amount})`);
+    alert("Bazar saved successfully!");
+    bazarForm.reset();
+  };
 
   const updateAdminPinBtn = document.getElementById("update-admin-pin-btn");
   if (updateAdminPinBtn) {
     updateAdminPinBtn.onclick = () => {
       const newPin = document.getElementById("new-admin-pin-input").value.trim();
-      const pinMsg = document.getElementById("admin-pin-msg");
+      const msgEl = document.getElementById("admin-pin-msg");
 
       if (newPin.length < 4) {
-        pinMsg.style.color = "#ef4444";
-        pinMsg.textContent = "Admin PIN must be at least 4 characters.";
+        msgEl.style.color = "#ef4444";
+        msgEl.textContent = "PIN must be at least 4 characters.";
         return;
       }
 
-      set(ref(db, "users/Rizu/pin"), newPin)
-        .then(() => {
-          pinMsg.style.color = "#16a34a";
-          pinMsg.textContent = "Admin PIN updated successfully!";
-          document.getElementById("new-admin-pin-input").value = "";
-          setTimeout(() => pinMsg.textContent = "", 3000);
-        })
-        .catch(err => {
-          pinMsg.style.color = "#ef4444";
-          pinMsg.textContent = err.message;
-        });
+      set(ref(db, "users/Rizu/pin"), newPin).then(() => {
+        msgEl.style.color = "#16a34a";
+        msgEl.textContent = "Admin PIN updated successfully!";
+        document.getElementById("new-admin-pin-input").value = "";
+        setTimeout(() => msgEl.textContent = "", 3000);
+      });
     };
   }
 
-  const logoutBtn = document.getElementById("logout-btn");
-  if (logoutBtn) {
-    logoutBtn.onclick = () => {
+  const adminLogoutBtn = document.getElementById("logout-btn");
+  if (adminLogoutBtn) {
+    adminLogoutBtn.onclick = () => {
+      localStorage.removeItem("currentUser");
       sessionStorage.removeItem("currentUser");
       window.location.href = "index.html";
     };
@@ -807,106 +616,96 @@ if (bazarForm) {
 }
 
 // ------------------------------------
-// 4. DAILY HISTORY LOGIC (history.html)
+// 4. HISTORY PAGE LOGIC (history.html)
 // ------------------------------------
 const historyDateSelect = document.getElementById("history-date-select");
 if (historyDateSelect) {
+  initNotifications();
+  const currentUser = JSON.parse(localStorage.getItem("currentUser") || sessionStorage.getItem("currentUser"));
+  if (!currentUser) {
+    window.location.href = "index.html";
+  }
+
   const backBtn = document.getElementById("back-btn");
-  const selectedDateLabel = document.getElementById("selected-date-label");
-  const historyBoardBody = document.getElementById("history-board-body");
-  const historyBazarList = document.getElementById("history-bazar-list");
-
   if (backBtn) {
-    backBtn.onclick = (e) => {
-      e.preventDefault();
-      const currentUser = JSON.parse(sessionStorage.getItem("currentUser"));
-      if (currentUser && currentUser.role === "admin") {
-        window.location.href = "admin.html";
-      } else {
-        window.location.href = "member.html";
-      }
-    };
+    backBtn.href = currentUser.role === "admin" ? "admin.html" : "member.html";
   }
 
-  async function loadHistoryForDate(targetDate) {
-    if (!targetDate) {
-      if (selectedDateLabel) selectedDateLabel.textContent = "--";
-      if (historyBoardBody) historyBoardBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #64748b;">Please select a date.</td></tr>`;
-      if (historyBazarList) historyBazarList.innerHTML = `<li>No date selected.</li>`;
-      return;
+  async function loadHistoryDates() {
+    const datesSet = new Set();
+
+    const mealsSnap = await get(ref(db, "meals"));
+    if (mealsSnap.exists()) {
+      Object.keys(mealsSnap.val()).forEach(dateStr => datesSet.add(dateStr));
     }
 
-    if (selectedDateLabel) selectedDateLabel.textContent = targetDate;
+    const bazarSnap = await get(ref(db, "bazar"));
+    if (bazarSnap.exists()) {
+      Object.keys(bazarSnap.val()).forEach(dateStr => datesSet.add(dateStr));
+    }
 
-    try {
-      const mealsSnap = await get(ref(db, `meals/${targetDate}`));
-      const mealsData = mealsSnap.exists() ? mealsSnap.val() : {};
+    const sortedDates = Array.from(datesSet).sort().reverse();
+    const todayStr = getTodayDateStr();
 
-      let tableHtml = "";
-      MEMBERS_LIST.forEach((name) => {
-        const m = mealsData[name] || { lunch: 0, dinner: 0 };
-        const total = (m.lunch || 0) + (m.dinner || 0);
-        tableHtml += `<tr>
-          <td><strong>${name}</strong> ${name === 'Rizu' ? '(Admin)' : ''}</td>
-          <td>${m.lunch || 0}</td>
-          <td>${m.dinner || 0}</td>
-          <td><strong>${total}</strong></td>
-        </tr>`;
+    let optionsHtml = "";
+    if (sortedDates.length === 0) {
+      optionsHtml = `<option value="">No history available</option>`;
+    } else {
+      sortedDates.forEach(dateStr => {
+        const selected = dateStr === todayStr ? "selected" : "";
+        optionsHtml += `<option value="${dateStr}" ${selected}>${dateStr}</option>`;
       });
-      if (historyBoardBody) historyBoardBody.innerHTML = tableHtml;
-
-      const bazarSnap = await get(ref(db, `bazar/${targetDate}`));
-      if (bazarSnap.exists()) {
-        const bazarData = bazarSnap.val();
-        let bazarHtml = "";
-        Object.values(bazarData).forEach(b => {
-          bazarHtml += `<li style="padding: 4px 0; border-bottom: 1px dashed #e2e8f0;">
-            🛒 <strong>${b.item}</strong> - ৳${b.amount} ${b.addedBy ? `(by ${b.addedBy})` : ''}
-          </li>`;
-        });
-        if (historyBazarList) historyBazarList.innerHTML = bazarHtml;
-      } else {
-        if (historyBazarList) historyBazarList.innerHTML = `<li style="color: #64748b;">No bazar expenses logged for this date.</li>`;
-      }
-    } catch (err) {
-      if (historyBoardBody) historyBoardBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #dc2626;">Error loading data: ${err.message}</td></tr>`;
     }
+
+    historyDateSelect.innerHTML = optionsHtml;
+    
+    const initialDate = historyDateSelect.value || todayStr;
+    if (initialDate) loadHistoryDataForDate(initialDate);
   }
 
-  async function populateAvailableDates() {
-    try {
-      const datesSet = new Set();
-      const today = getTodayDateStr();
-      datesSet.add(today);
+  historyDateSelect.onchange = (e) => {
+    loadHistoryDataForDate(e.target.value);
+  };
 
-      const mealsSnap = await get(ref(db, "meals"));
-      if (mealsSnap.exists()) {
-        Object.keys(mealsSnap.val()).forEach(d => datesSet.add(d));
-      }
+  async function loadHistoryDataForDate(dateStr) {
+    const dateLabel = document.getElementById("selected-date-label");
+    const boardBody = document.getElementById("history-board-body");
+    const bazarList = document.getElementById("history-bazar-list");
 
-      const bazarSnap = await get(ref(db, "bazar"));
-      if (bazarSnap.exists()) {
-        Object.keys(bazarSnap.val()).forEach(d => datesSet.add(d));
-      }
+    if (dateLabel) dateLabel.textContent = dateStr;
 
-      const sortedDates = Array.from(datesSet).sort().reverse();
+    const mealsSnap = await get(ref(db, `meals/${dateStr}`));
+    const mealsData = mealsSnap.exists() ? mealsSnap.val() : {};
 
-      let optionsHtml = "";
-      sortedDates.forEach(d => {
-        optionsHtml += `<option value="${d}">${d} ${d === today ? '(Today)' : ''}</option>`;
+    let rowsHtml = "";
+    MEMBERS_LIST.forEach(name => {
+      const meal = mealsData[name] || { lunch: 0, dinner: 0 };
+      const totalMeal = (meal.lunch || 0) + (meal.dinner || 0);
+
+      rowsHtml += `<tr>
+        <td>${name}</td>
+        <td>${meal.lunch}</td>
+        <td>${meal.dinner}</td>
+        <td><strong>${totalMeal}</strong></td>
+      </tr>`;
+    });
+    if (boardBody) boardBody.innerHTML = rowsHtml;
+
+    const bazarSnap = await get(ref(db, `bazar/${dateStr}`));
+    if (!bazarSnap.exists()) {
+      bazarList.innerHTML = `<li style="color: #64748b; padding: 4px 0;">No bazar expenses recorded on this date.</li>`;
+    } else {
+      let bazarHtml = "";
+      const bazarData = bazarSnap.val();
+      Object.values(bazarData).forEach(b => {
+        bazarHtml += `<li style="padding: 6px 0; border-bottom: 1px solid #f1f5f9; display: flex; justify-content: space-between;">
+          <span>🛒 ${b.item} <small style="color: #64748b;">(by ${b.addedBy || 'Admin'})</small></span>
+          <strong>৳${b.amount}</strong>
+        </li>`;
       });
-
-      historyDateSelect.innerHTML = optionsHtml;
-      loadHistoryForDate(sortedDates[0]);
-    } catch (err) {
-      historyDateSelect.innerHTML = `<option value="">Error fetching dates</option>`;
-      if (historyBoardBody) historyBoardBody.innerHTML = `<tr><td colspan="4" style="text-align: center; color: #dc2626;">Failed to connect to Firebase. Check database rules or internet access.</td></tr>`;
+      bazarList.innerHTML = bazarHtml;
     }
   }
 
-  historyDateSelect.addEventListener("change", (e) => {
-    loadHistoryForDate(e.target.value);
-  });
-
-  populateAvailableDates();
+  loadHistoryDates();
 }
