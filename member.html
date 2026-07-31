@@ -18,9 +18,24 @@
 <body>
   <div class="dashboard-container">
     
-    <header class="top-header">
-      <h2 id="welcome-name">Hi, Member! 👋</h2>
-      <a href="history.html" class="nav-link">📜 History</a>
+    <header class="top-header" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+      <h2 id="welcome-name" style="font-size: 1.2rem;">Hi, Member! 👋</h2>
+      
+      <!-- Notification Bell Icon -->
+      <div class="notification-wrapper" style="position: relative; display: inline-block; margin-left: auto; margin-right: 10px;">
+        <button id="bell-icon-btn" class="btn btn-light" style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 50%; cursor: pointer; font-size: 1rem; position: relative;">
+          🔔 
+          <span id="notif-badge" class="badge" style="position: absolute; top: -2px; right: -2px; background: #dc2626; color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 50%; display: none;">0</span>
+        </button>
+        <div id="notif-dropdown" class="card shadow" style="display: none; position: absolute; right: 0; top: 40px; width: 280px; max-height: 320px; overflow-y: auto; z-index: 1000; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
+          <div style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px; font-size: 0.9rem; color: #1e293b;">Notifications</div>
+          <div id="notification-list">
+            <small style="color: #64748b;">No new notifications.</small>
+          </div>
+        </div>
+      </div>
+
+      <a href="history.html" class="nav-link" style="margin-right: 10px;">📜 History</a>
       <button id="logout-btn" class="btn-logout">Logout</button>
     </header>
 
@@ -62,7 +77,6 @@
     <div class="card">
       <h3>📋 Today's Live Board</h3>
       
-      <!-- Summary totals container -->
       <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; text-align: center; margin-bottom: 12px; font-size: 0.85rem;">
         <div style="background: #f1f5f9; padding: 6px; border-radius: 4px; border: 1px solid #e2e8f0;">
           <span style="color: #64748b; display: block; font-size: 0.75rem;">Total Lunch</span>
