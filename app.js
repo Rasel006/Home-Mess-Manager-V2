@@ -505,7 +505,7 @@ if (bazarForm) {
   const adminLunchMinus = document.getElementById("lunch-minus");
   const adminDinnerPlus = document.getElementById("dinner-plus");
   const adminDinnerMinus = document.getElementById("dinner-minus");
-  const saveAdminMealBtn = document.getElementById("save-meal-btn"); // Save Admin Meal Button
+  const saveAdminMealBtn = document.getElementById("save-meal-btn");
 
   if (adminLunchPlus) adminLunchPlus.onclick = () => { adminLunch++; if (adminLunchVal) adminLunchVal.textContent = adminLunch; };
   if (adminLunchMinus) adminLunchMinus.onclick = () => { if (adminLunch > 0) adminLunch--; if (adminLunchVal) adminLunchVal.textContent = adminLunch; };
