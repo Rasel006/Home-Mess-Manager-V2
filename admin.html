@@ -3,104 +3,128 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Panel - Home Mess Manager V2</title>
+  <title>Admin Control Panel - Home Mess Manager</title>
   <link rel="stylesheet" href="style.css">
-  <style>
-    .btn-copy { background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: bold; width: 100%; cursor: pointer; margin-top: 10px; }
-    .btn-copy:hover { background: #0369a1; }
-    .approval-card { border-left: 4px solid #f59e0b; background: #fffbeb; }
-    .action-btn-group { display: flex; gap: 6px; margin-top: 6px; }
-    .btn-approve { background: #16a34a; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-    .btn-reject { background: #dc2626; color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; }
-  </style>
 </head>
 <body>
-  <div class="dashboard-container">
-    
-    <!-- Top Header with Notification Bell -->
-    <header class="top-header" style="display: flex; justify-content: space-between; align-items: center; position: relative;">
+
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
       <h2>⚙️ Admin Control Panel</h2>
-      
-      <!-- Notification Bell Icon Wrapper -->
-      <div class="notification-wrapper" style="position: relative; display: inline-block; margin-left: auto; margin-right: 10px;">
-        <button id="bell-icon-btn" class="btn btn-light" style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 50%; cursor: pointer; font-size: 1rem; position: relative;">
-          🔔 
-          <span id="notif-badge" class="badge" style="position: absolute; top: -2px; right: -2px; background: #dc2626; color: white; font-size: 0.6rem; padding: 2px 5px; border-radius: 50%; display: none;">0</span>
-        </button>
-        <div id="notif-dropdown" class="card shadow" style="display: none; position: absolute; right: 0; top: 40px; width: 280px; max-height: 320px; overflow-y: auto; z-index: 1000; background: #fff; border: 1px solid #cbd5e1; border-radius: 8px; padding: 8px; text-align: left; box-shadow: 0 4px 10px rgba(0,0,0,0.1);">
-          <div style="font-weight: bold; border-bottom: 1px solid #e2e8f0; padding-bottom: 5px; margin-bottom: 5px; font-size: 0.9rem; color: #1e293b;">Notifications</div>
-          <div id="notification-list">
-            <small style="color: #64748b;">No new notifications.</small>
+      <div style="display: flex; align-items: center; gap: 10px;">
+        <!-- Notification Bell -->
+        <div style="position: relative;">
+          <button id="bell-icon-btn" style="background: none; border: none; font-size: 1.3rem; cursor: pointer;">🔔<span id="notif-badge" class="badge" style="display:none;">0</span></button>
+          <div id="notif-dropdown" style="display: none; position: absolute; right: 0; top: 30px; width: 260px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 10px; z-index: 1000;">
+            <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Notifications</h4>
+            <div id="notification-list" style="max-height: 200px; overflow-y: auto;">
+              <small style="color: #64748b;">Loading...</small>
+            </div>
           </div>
         </div>
+        <a href="history.html" class="btn-history">📜 History</a>
+        <button id="logout-btn" class="btn-logout">Logout</button>
       </div>
+    </div>
 
-      <a href="history.html" class="nav-link" style="margin-right: 10px;">📜 History</a>
-      <button id="logout-btn" class="btn-logout">Logout</button>
-    </header>
-
-    <!-- Admin Approval Requests Card -->
-    <div class="card approval-card">
-      <h3>🔔 Pending Approvals (<span id="pending-count">0</span>)</h3>
-      <div id="approval-list" style="margin-top: 10px;">
+    <!-- Pending Approvals Section -->
+    <div class="card" style="background: #fef3c7; border: 1px solid #f59e0b;">
+      <h3 style="margin-top: 0; color: #92400e;">🔔 Pending Approvals (<span id="pending-count">0</span>)</h3>
+      <div id="approval-list">
         <p style="color: #64748b; font-size: 0.85rem;">No pending requests at the moment.</p>
       </div>
     </div>
 
-    <!-- Admin Meal Entry -->
+    <!-- Admin Meal Control Section -->
     <div class="card">
-      <h3>🍽️ Admin Meal Control (<span id="current-date">--</span>)</h3>
-      <div class="meal-input-group">
-        <div class="meal-row">
-          <span>Lunch Meal:</span>
-          <div class="counter-control">
-            <button type="button" class="btn-counter" id="lunch-minus">-</button>
-            <span id="lunch-val" class="counter-val">0</span>
-            <button type="button" class="btn-counter" id="lunch-plus">+</button>
-          </div>
-        </div>
-        <div class="meal-row">
-          <span>Dinner Meal:</span>
-          <div class="counter-control">
-            <button type="button" class="btn-counter" id="dinner-minus">-</button>
-            <span id="dinner-val" class="counter-val">0</span>
-            <button type="button" class="btn-counter" id="dinner-plus">+</button>
-          </div>
+      <h3>🍽️ Admin Meal Control (<span id="current-date"></span>)</h3>
+      <div class="meal-row">
+        <span>Lunch Meal:</span>
+        <div class="counter-group">
+          <button id="lunch-minus" class="counter-btn">-</button>
+          <span id="lunch-val" class="counter-val">0</span>
+          <button id="lunch-plus" class="counter-btn">+</button>
         </div>
       </div>
-      <button id="save-meal-btn" class="btn btn-primary" style="width: 100%; margin-top: 15px;">Save Admin Meal</button>
-      <p id="save-msg" class="status-msg"></p>
+      <div class="meal-row" style="margin-top: 10px;">
+        <span>Dinner Meal:</span>
+        <div class="counter-group">
+          <button id="dinner-minus" class="counter-btn">-</button>
+          <span id="dinner-val" class="counter-val">0</span>
+          <button id="dinner-plus" class="counter-btn">+</button>
+        </div>
+      </div>
+      <button id="save-meal-btn" class="btn-primary" style="margin-top: 15px; width: 100%;">Save Admin Meal</button>
     </div>
 
-    <!-- Live Board -->
+    <!-- Live Board & Instant Edit -->
     <div class="card">
-      <h3>⚡ Today's Live Board & Instant Edit</h3>
-      <table class="meal-table">
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th>Lunch</th>
-            <th>Dinner</th>
-            <th>Action</th>
-          </tr>
-        </thead>
-        <tbody id="board-body">
-          <tr><td colspan="4">Loading live board...</td></tr>
-        </tbody>
-      </table>
-      <div style="margin-top: 12px; font-weight: bold; font-size: 0.9rem; color: #334155;">
-        Today Total: Lunch: <span id="total-lunch">0</span> | Dinner: <span id="total-dinner">0</span> | Total: <span id="total-day">0</span>
+      <h3 style="margin-top: 0;">⚡ Today's Live Board & Instant Edit</h3>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Lunch</th>
+              <th>Dinner</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="board-body">
+            <!-- Dynamic Rows -->
+          </tbody>
+          <tfoot>
+            <tr style="background: #f1f5f9; font-weight: bold;">
+              <td>Total</td>
+              <td id="total-lunch">0</td>
+              <td id="total-dinner">0</td>
+              <td><span id="total-day" style="color: #2563eb;">0</span></td>
+            </tr>
+          </tfoot>
+        </table>
       </div>
     </div>
 
-    <!-- Direct Admin Deposit Entry -->
+    <!-- Send Notification Section -->
     <div class="card">
-      <h3>💵 Direct Deposit Entry (Auto-Approved)</h3>
+      <h3>📢 Send Notification</h3>
+      <form id="admin-notification-form">
+        <input type="text" id="admin-notif-title" placeholder="Notification Title" required style="width:100%; margin-bottom:8px; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+        <textarea id="admin-notif-msg" placeholder="Write message here..." required style="width:100%; margin-bottom:8px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; height:70px;"></textarea>
+        <button type="submit" style="background:#2563eb; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold;">Broadcast Notification</button>
+      </form>
+    </div>
+
+    <!-- Bazar Entry Form -->
+    <div class="card">
+      <h3 style="margin-top: 0;">🛒 Add Bazar Expense</h3>
+      <form id="bazar-form">
+        <div class="form-group">
+          <label>Bazar Item / Details</label>
+          <input type="text" id="bazar-item" placeholder="e.g. Rice, Potato, Fish" required>
+        </div>
+        <div class="form-group">
+          <label>Amount (Tk)</label>
+          <input type="number" id="bazar-amount" placeholder="0" required>
+        </div>
+        <div class="form-group">
+          <label>Date</label>
+          <input type="date" id="bazar-date" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">Save Bazar</button>
+      </form>
+    </div>
+
+    <!-- Direct Deposit Entry Form -->
+    <div class="card">
+      <h3 style="margin-top: 0;">💵 Direct Deposit Entry</h3>
       <form id="admin-deposit-form">
-        <div class="form-group" style="margin-bottom: 10px;">
-          <select id="admin-deposit-user" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-            <option value="">Select Member</option>
-            <option value="Rizu">Rizu (Admin)</option>
+        <div class="form-group">
+          <label>Select Member</label>
+          <select id="admin-deposit-user" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
+            <option value="">-- Choose Member --</option>
+            <option value="Rizu">Rizu</option>
             <option value="Jim">Jim</option>
             <option value="Maruf">Maruf</option>
             <option value="Arafat">Arafat</option>
@@ -108,78 +132,61 @@
             <option value="Tanvir">Tanvir</option>
             <option value="Sourov">Sourov</option>
           </select>
-          <input type="number" id="admin-deposit-amount" placeholder="Enter Amount (Tk)" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
         </div>
-        <button type="submit" class="btn btn-primary" style="width: 100%;">Add Deposit</button>
+        <div class="form-group">
+          <label>Amount (Tk)</label>
+          <input type="number" id="admin-deposit-amount" placeholder="0" required>
+        </div>
+        <button type="submit" class="btn-primary" style="width: 100%;">Add Deposit</button>
       </form>
     </div>
 
-    <!-- Direct Admin Bazar Entry -->
+    <!-- Monthly Settlement Overview -->
     <div class="card">
-      <h3>🛒 Direct Bazar Entry (Auto-Approved)</h3>
-      <form id="bazar-form">
-        <div class="form-group" style="margin-bottom: 10px;">
-          <input type="text" id="bazar-item" placeholder="Item Name" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-          <input type="number" id="bazar-amount" placeholder="Cost (Tk)" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1; margin-bottom: 8px;">
-          <input type="date" id="bazar-date" required style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-        </div>
-        <button type="submit" class="btn btn-secondary" style="width: 100%;">Save Bazar Entry</button>
-      </form>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+        <h3 style="margin: 0;">📊 Monthly Settlement</h3>
+        <input type="month" id="month-select" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;">
+      </div>
+
+      <div style="font-size: 0.9rem; margin-bottom: 12px; background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
+        <div>Total Mess Meals: <strong id="monthly-total-meals">0</strong></div>
+        <div>Total Mess Bazar: <strong id="monthly-total-bazar">0 Tk</strong></div>
+        <div>Calculated Meal Rate: <strong id="calculated-meal-rate" style="color: #2563eb;">0.00 Tk</strong></div>
+      </div>
+
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Member</th>
+              <th>Meals</th>
+              <th>Deposit</th>
+              <th>Cost</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="settlement-board-body">
+            <!-- Dynamic Settlement Rows -->
+          </tbody>
+        </table>
+      </div>
+      <button id="copy-summary-btn" class="btn-primary" style="margin-top: 15px; width: 100%; background: #059669;">📋 Copy Summary for Messenger</button>
     </div>
 
-    <!-- Monthly Settlement Board -->
+    <!-- Admin Security / PIN Change -->
     <div class="card">
-      <h3>📊 Monthly Settlement Overview</h3>
-      <div class="form-group" style="margin-bottom: 12px;">
-        <label for="month-select" style="font-weight: 600;">Select Month:</label>
-        <input type="month" id="month-select" style="width: 100%; padding: 8px; border-radius: 6px; border: 1px solid #cbd5e1;">
+      <h3 style="margin-top: 0;">🔒 Change Admin PIN</h3>
+      <div class="form-group">
+        <label>New Admin PIN (Min 4 chars)</label>
+        <input type="password" id="new-admin-pin-input" placeholder="Enter new PIN">
       </div>
-
-      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; text-align: center; margin-bottom: 12px;">
-        <div style="background: #f1f5f9; padding: 8px; border-radius: 6px;">
-          <small>Total Meals</small>
-          <h4 id="monthly-total-meals" style="margin-top: 2px;">0</h4>
-        </div>
-        <div style="background: #f1f5f9; padding: 8px; border-radius: 6px;">
-          <small>Total Bazar</small>
-          <h4 id="monthly-total-bazar" style="margin-top: 2px;">0 Tk</h4>
-        </div>
-        <div style="background: #f1f5f9; padding: 8px; border-radius: 6px;">
-          <small>Meal Rate</small>
-          <h4 id="calculated-meal-rate" style="margin-top: 2px; color: #2563eb;">0.00 Tk</h4>
-        </div>
-      </div>
-
-      <table class="meal-table">
-        <thead>
-          <tr>
-            <th>Member</th>
-            <th>Meals</th>
-            <th>Deposit</th>
-            <th>Total Cost</th>
-            <th>Status</th>
-          </tr>
-        </thead>
-        <tbody id="settlement-board-body">
-          <tr><td colspan="5">Loading calculation...</td></tr>
-        </tbody>
-      </table>
-
-      <button id="copy-summary-btn" class="btn-copy">📋 Copy Summary for Messenger</button>
-    </div>
-
-    <!-- Change Admin PIN Card -->
-    <div class="card">
-      <h3>🔑 Change Admin PIN</h3>
-      <div class="form-group" style="margin-bottom: 10px;">
-        <input type="password" id="new-admin-pin-input" placeholder="Enter New Admin PIN / Password" style="width: 100%; padding: 10px; border-radius: 6px; border: 1px solid #cbd5e1;">
-      </div>
-      <button id="update-admin-pin-btn" class="btn btn-secondary" style="width: 100%;">Update Admin PIN</button>
-      <p id="admin-pin-msg" class="status-msg" style="margin-top: 8px;"></p>
+      <button id="update-admin-pin-btn" class="btn-primary" style="width: 100%;">Update PIN</button>
+      <p id="admin-pin-msg" style="margin-top: 8px; font-size: 0.85rem; text-align: center;"></p>
     </div>
 
   </div>
 
+  <!-- Main Application Script -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
