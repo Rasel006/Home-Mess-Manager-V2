@@ -3,65 +3,69 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Admin Control Panel - Home Mess Manager</title>
+  <title>Admin Control Panel - Mess Manager</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
   <div class="container">
     <!-- Header -->
-    <div class="header">
-      <h2>⚙️ Admin Control Panel</h2>
-      <div style="display: flex; align-items: center; gap: 10px;">
+    <div class="header" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; margin-bottom: 20px;">
+      <h2 style="margin: 0;">⚙️ Admin Control Panel</h2>
+      <div style="display: flex; align-items: center; gap: 8px;">
         <!-- Notification Bell -->
         <div style="position: relative;">
-          <button id="bell-icon-btn" style="background: none; border: none; font-size: 1.3rem; cursor: pointer;">🔔<span id="notif-badge" class="badge" style="display:none;">0</span></button>
-          <div id="notif-dropdown" style="display: none; position: absolute; right: 0; top: 30px; width: 260px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 10px; z-index: 1000;">
+          <button id="bell-icon-btn" style="background: #f1f5f9; border: 1px solid #cbd5e1; padding: 6px 10px; border-radius: 6px; font-size: 1.1rem; cursor: pointer;">🔔<span id="notif-badge" class="badge" style="display:none;">0</span></button>
+          <div id="notif-dropdown" style="display: none; position: absolute; right: 0; top: 40px; width: 260px; background: #fff; border: 1px solid #cbd5e1; border-radius: 6px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); padding: 10px; z-index: 1000; text-align: left;">
             <h4 style="margin: 0 0 8px 0; font-size: 0.9rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 4px;">Notifications</h4>
             <div id="notification-list" style="max-height: 200px; overflow-y: auto;">
               <small style="color: #64748b;">Loading...</small>
             </div>
           </div>
         </div>
-        <a href="history.html" class="btn-history">📜 History</a>
-        <button id="logout-btn" class="btn-logout">Logout</button>
+        <a href="history.html" class="btn-history" style="text-decoration: none; padding: 6px 12px; background: #e2e8f0; color: #334155; border-radius: 6px; font-size: 0.9rem; font-weight: 500;">📜 History</a>
+        <button id="logout-btn" class="btn-logout" style="padding: 6px 12px; background: #ef4444; color: #fff; border: none; border-radius: 6px; font-size: 0.9rem; cursor: pointer; font-weight: 500;">Logout</button>
       </div>
     </div>
 
-    <!-- Pending Approvals Section -->
-    <div class="card" style="background: #fef3c7; border: 1px solid #f59e0b;">
-      <h3 style="margin-top: 0; color: #92400e;">🔔 Pending Approvals (<span id="pending-count">0</span>)</h3>
+    <!-- Pending Requests Section -->
+    <div class="card" style="background: #fef3c7; border: 1px solid #f59e0b; margin-bottom: 20px;">
+      <h3 style="margin-top: 0; color: #b45309; display: flex; align-items: center; gap: 6px;">
+        🔔 Pending Approvals (<span id="pending-count">0</span>)
+      </h3>
       <div id="approval-list">
         <p style="color: #64748b; font-size: 0.85rem;">No pending requests at the moment.</p>
       </div>
     </div>
 
-    <!-- Admin Meal Control Section -->
+    <!-- Admin Meal Control -->
     <div class="card">
-      <h3>🍽️ Admin Meal Control (<span id="current-date"></span>)</h3>
-      <div class="meal-row">
-        <span>Lunch Meal:</span>
-        <div class="counter-group">
-          <button id="lunch-minus" class="counter-btn">-</button>
-          <span id="lunch-val" class="counter-val">0</span>
-          <button id="lunch-plus" class="counter-btn">+</button>
+      <h3>🍽️ Admin Meal Control (<span id="current-date">Loading...</span>)</h3>
+      <div style="display: flex; flex-direction: column; gap: 12px; margin-top: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 500;">Lunch Meal:</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="lunch-minus" style="padding: 4px 10px; cursor: pointer; font-weight: bold;">-</button>
+            <span id="lunch-val" style="font-size: 1.1rem; font-weight: bold; min-width: 20px; text-align: center;">0</span>
+            <button id="lunch-plus" style="padding: 4px 10px; cursor: pointer; font-weight: bold;">+</button>
+          </div>
         </div>
-      </div>
-      <div class="meal-row" style="margin-top: 10px;">
-        <span>Dinner Meal:</span>
-        <div class="counter-group">
-          <button id="dinner-minus" class="counter-btn">-</button>
-          <span id="dinner-val" class="counter-val">0</span>
-          <button id="dinner-plus" class="counter-btn">+</button>
+        <div style="display: flex; justify-content: space-between; align-items: center;">
+          <span style="font-weight: 500;">Dinner Meal:</span>
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <button id="dinner-minus" style="padding: 4px 10px; cursor: pointer; font-weight: bold;">-</button>
+            <span id="dinner-val" style="font-size: 1.1rem; font-weight: bold; min-width: 20px; text-align: center;">0</span>
+            <button id="dinner-plus" style="padding: 4px 10px; cursor: pointer; font-weight: bold;">+</button>
+          </div>
         </div>
+        <button id="save-meal-btn" style="background: #2563eb; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 5px;">Save Admin Meal</button>
       </div>
-      <button id="save-meal-btn" class="btn-primary" style="margin-top: 15px; width: 100%;">Save Admin Meal</button>
     </div>
 
-    <!-- Live Board & Instant Edit -->
+    <!-- Today's Live Board & Instant Edit -->
     <div class="card">
-      <h3 style="margin-top: 0;">⚡ Today's Live Board & Instant Edit</h3>
-      <div class="table-container">
+      <h3>⚡ Today's Live Board & Instant Edit</h3>
+      <div style="overflow-x: auto;">
         <table>
           <thead>
             <tr>
@@ -72,121 +76,103 @@
             </tr>
           </thead>
           <tbody id="board-body">
-            <!-- Dynamic Rows -->
+            <!-- Populated via JS -->
           </tbody>
           <tfoot>
-            <tr style="background: #f1f5f9; font-weight: bold;">
+            <tr style="font-weight: bold; background: #f1f5f9;">
               <td>Total</td>
               <td id="total-lunch">0</td>
               <td id="total-dinner">0</td>
-              <td><span id="total-day" style="color: #2563eb;">0</span></td>
+              <td id="total-day" style="color: #2563eb;">0</td>
             </tr>
           </tfoot>
         </table>
       </div>
     </div>
 
-    <!-- Send Notification Section -->
+    <!-- Send Notification -->
     <div class="card">
       <h3>📢 Send Notification</h3>
-      <form id="admin-notification-form">
-        <input type="text" id="admin-notif-title" placeholder="Notification Title" required style="width:100%; margin-bottom:8px; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
-        <textarea id="admin-notif-msg" placeholder="Write message here..." required style="width:100%; margin-bottom:8px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; height:70px;"></textarea>
-        <button type="submit" style="background:#2563eb; color:#fff; border:none; padding:8px 16px; border-radius:4px; cursor:pointer; width:100%; font-weight:bold;">Broadcast Notification</button>
+      <form id="admin-notification-form" style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="text" id="admin-notif-title" placeholder="Notification Title" required style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <textarea id="admin-notif-msg" placeholder="Write message here..." rows="3" required style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;"></textarea>
+        <button type="submit" style="background: #0284c7; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer;">Broadcast Notification</button>
       </form>
     </div>
 
-    <!-- Bazar Entry Form -->
+    <!-- Direct Deposit Entry -->
     <div class="card">
-      <h3 style="margin-top: 0;">🛒 Add Bazar Expense</h3>
-      <form id="bazar-form">
-        <div class="form-group">
-          <label>Bazar Item / Details</label>
-          <input type="text" id="bazar-item" placeholder="e.g. Rice, Potato, Fish" required>
-        </div>
-        <div class="form-group">
-          <label>Amount (Tk)</label>
-          <input type="number" id="bazar-amount" placeholder="0" required>
-        </div>
-        <div class="form-group">
-          <label>Date</label>
-          <input type="date" id="bazar-date" required>
-        </div>
-        <button type="submit" class="btn-primary" style="width: 100%;">Save Bazar</button>
+      <h3>💵 Direct Deposit Entry</h3>
+      <form id="admin-deposit-form" style="display: flex; flex-direction: column; gap: 10px;">
+        <select id="admin-deposit-user" required style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+          <option value="">Select Member</option>
+          <option value="Rizu">Rizu</option>
+          <option value="Jim">Jim</option>
+          <option value="Maruf">Maruf</option>
+          <option value="Arafat">Arafat</option>
+          <option value="Shawon">Shawon</option>
+          <option value="Tanvir">Tanvir</option>
+          <option value="Sourov">Sourov</option>
+        </select>
+        <input type="number" id="admin-deposit-amount" placeholder="Amount (Tk)" required style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <button type="submit" style="background: #16a34a; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer;">Add Deposit</button>
       </form>
     </div>
 
-    <!-- Direct Deposit Entry Form -->
+    <!-- Direct Bazar Entry -->
     <div class="card">
-      <h3 style="margin-top: 0;">💵 Direct Deposit Entry</h3>
-      <form id="admin-deposit-form">
-        <div class="form-group">
-          <label>Select Member</label>
-          <select id="admin-deposit-user" required style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px;">
-            <option value="">-- Choose Member --</option>
-            <option value="Rizu">Rizu</option>
-            <option value="Jim">Jim</option>
-            <option value="Maruf">Maruf</option>
-            <option value="Arafat">Arafat</option>
-            <option value="Shawon">Shawon</option>
-            <option value="Tanvir">Tanvir</option>
-            <option value="Sourov">Sourov</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>Amount (Tk)</label>
-          <input type="number" id="admin-deposit-amount" placeholder="0" required>
-        </div>
-        <button type="submit" class="btn-primary" style="width: 100%;">Add Deposit</button>
+      <h3>🛒 Direct Bazar Entry</h3>
+      <form id="bazar-form" style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="text" id="bazar-item" placeholder="Bazar Item Details" required style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <input type="number" id="bazar-amount" placeholder="Amount (Tk)" required style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <input type="date" id="bazar-date" required style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <button type="submit" style="background: #16a34a; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer;">Save Bazar Expense</button>
       </form>
     </div>
 
     <!-- Monthly Settlement Overview -->
     <div class="card">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
-        <h3 style="margin: 0;">📊 Monthly Settlement</h3>
-        <input type="month" id="month-select" style="padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px;">
+      <h3>📊 Monthly Settlement Overview</h3>
+      <div style="margin-bottom: 12px;">
+        <label for="month-select" style="font-weight: 500; font-size: 0.9rem;">Select Month:</label>
+        <input type="month" id="month-select" style="padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; margin-left: 8px;">
       </div>
-
-      <div style="font-size: 0.9rem; margin-bottom: 12px; background: #f8fafc; padding: 8px; border-radius: 4px; border: 1px solid #e2e8f0;">
-        <div>Total Mess Meals: <strong id="monthly-total-meals">0</strong></div>
-        <div>Total Mess Bazar: <strong id="monthly-total-bazar">0 Tk</strong></div>
-        <div>Calculated Meal Rate: <strong id="calculated-meal-rate" style="color: #2563eb;">0.00 Tk</strong></div>
+      <div style="background: #f8fafc; padding: 10px; border-radius: 6px; margin-bottom: 12px; font-size: 0.9rem; border: 1px solid #e2e8f0;">
+        <p style="margin: 4px 0;">Total Mess Meals: <strong id="monthly-total-meals">0</strong></p>
+        <p style="margin: 4px 0;">Total Mess Bazar: <strong id="monthly-total-bazar">0 Tk</strong></p>
+        <p style="margin: 4px 0;">Current Meal Rate: <strong id="calculated-meal-rate" style="color: #2563eb;">0 Tk</strong></p>
       </div>
-
-      <div class="table-container">
+      <div style="overflow-x: auto;">
         <table>
           <thead>
             <tr>
               <th>Member</th>
               <th>Meals</th>
               <th>Deposit</th>
-              <th>Cost</th>
+              <th>Total Cost</th>
               <th>Status</th>
             </tr>
           </thead>
           <tbody id="settlement-board-body">
-            <!-- Dynamic Settlement Rows -->
+            <!-- Populated via JS -->
           </tbody>
         </table>
       </div>
-      <button id="copy-summary-btn" class="btn-primary" style="margin-top: 15px; width: 100%; background: #059669;">📋 Copy Summary for Messenger</button>
+      <button id="copy-summary-btn" style="width: 100%; background: #4f46e5; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer; margin-top: 15px;">📋 Copy Summary for Messenger</button>
     </div>
 
-    <!-- Admin Security / PIN Change -->
+    <!-- Admin PIN Settings -->
     <div class="card">
-      <h3 style="margin-top: 0;">🔒 Change Admin PIN</h3>
-      <div class="form-group">
-        <label>New Admin PIN (Min 4 chars)</label>
-        <input type="password" id="new-admin-pin-input" placeholder="Enter new PIN">
+      <h3>🔒 Change Admin PIN</h3>
+      <div style="display: flex; flex-direction: column; gap: 10px;">
+        <input type="password" id="new-admin-pin-input" placeholder="New PIN (min 4 chars)" style="padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px;">
+        <button id="update-admin-pin-btn" style="background: #475569; color: #fff; border: none; padding: 10px; border-radius: 6px; font-weight: 600; cursor: pointer;">Update PIN</button>
+        <small id="admin-pin-msg" style="font-weight: 500;"></small>
       </div>
-      <button id="update-admin-pin-btn" class="btn-primary" style="width: 100%;">Update PIN</button>
-      <p id="admin-pin-msg" style="margin-top: 8px; font-size: 0.85rem; text-align: center;"></p>
     </div>
 
   </div>
 
-  <!-- Main Application Script -->
   <script type="module" src="app.js"></script>
 </body>
 </html>
