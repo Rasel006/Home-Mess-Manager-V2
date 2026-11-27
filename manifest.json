@@ -1,0 +1,13 @@
+{
+  "id": "./",
+  "name": "Home Mess Manager",
+  "short_name": "Mess Manager",
+  "description": "Manage daily meals, members and mess expenses.",
+  "start_url": "./",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#ffffff",
+  "theme_color": "#2563eb"
+}
+
