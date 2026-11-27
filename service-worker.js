@@ -1,4 +1,5 @@
-const CACHE_NAME = "home-mess-manager-v1";
+
+const CACHE_NAME = "home-mess-manager-v2";
 
 const APP_FILES = [
   "./",
@@ -8,7 +9,9 @@ const APP_FILES = [
   "./history.html",
   "./style.css",
   "./app.js",
-  "./manifest.json"
+  "./manifest.json",
+  "./icon-192.png",
+  "./icon-512.png"
 ];
 
 self.addEventListener("install", event => {
