@@ -9,6 +9,14 @@
 <title>Home Mess Manager V2 - Login</title>
   <link rel="stylesheet" href="style.css">
 </head>
+  <script>
+if ("serviceWorker" in navigator) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("./service-worker.js")
+      .catch(error => console.error("Service Worker:", error));
+  });
+}
+  </script>
 <body>
   <div class="container">
     <div class="card">
